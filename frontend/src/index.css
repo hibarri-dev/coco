@@ -1,0 +1,195 @@
+@import "tailwindcss";
+
+/* Drop licensed Gotham .woff2 files into /public/fonts to activate them; Montserrat is the fallback. */
+@font-face {
+  font-family: 'Gotham';
+  src: local('Gotham Book'), local('Gotham-Book'), url('/fonts/Gotham-Book.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Gotham';
+  src: local('Gotham Medium'), local('Gotham-Medium'), url('/fonts/Gotham-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Gotham';
+  src: local('Gotham Bold'), local('Gotham-Bold'), url('/fonts/Gotham-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@theme {
+  --color-coco-purple: #9e00ff;
+  --color-coco-violet: #b54dff;
+  --color-coco-lilac: #d9a6ff;
+  --color-coco-black: #000000;
+  --color-coco-white: #ffffff;
+  --color-coco-silver: #c0c0c0;
+  --color-coco-steel: #8a8a93;
+  --color-coco-ink: #07070a;
+  --color-coco-night: #0c0b12;
+  --color-coco-panel: #121118;
+  --color-coco-card: #17161f;
+  --color-coco-line: #26242f;
+
+  --font-sans: 'Gotham', 'Montserrat', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-gotham: 'Gotham', 'Montserrat', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --animate-twinkle: twinkle 4s ease-in-out infinite;
+  --animate-drift: drift 60s linear infinite;
+  --animate-drift-slow: drift 110s linear infinite;
+  --animate-marquee: marquee 40s linear infinite;
+  --animate-pulse-ring: pulse-ring 2.4s cubic-bezier(0.2, 0.6, 0.3, 1) infinite;
+  --animate-shimmer: shimmer 2.8s linear infinite;
+  --animate-gradient: gradient-pan 18s ease-in-out infinite alternate;
+
+  @keyframes twinkle {
+    0%, 100% { opacity: 0.25; }
+    50% { opacity: 1; }
+  }
+  @keyframes drift {
+    from { transform: translateX(-10%); }
+    to { transform: translateX(110%); }
+  }
+  @keyframes marquee {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+  @keyframes pulse-ring {
+    0% { transform: scale(0.6); opacity: 0.9; }
+    100% { transform: scale(2.4); opacity: 0; }
+  }
+  @keyframes shimmer {
+    from { background-position: -200% 0; }
+    to { background-position: 200% 0; }
+  }
+  @keyframes gradient-pan {
+    0% { background-position: 0% 30%; }
+    100% { background-position: 100% 70%; }
+  }
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    color-scheme: dark;
+  }
+  body {
+    margin: 0;
+    font-family: var(--font-sans);
+    background-color: var(--color-coco-black);
+    color: var(--color-coco-white);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+  ::selection {
+    background: rgb(158 0 255 / 0.45);
+    color: #fff;
+  }
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #2a2833;
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #3b3846;
+    background-clip: padding-box;
+  }
+  button {
+    cursor: pointer;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-coco-violet);
+    outline-offset: 2px;
+  }
+}
+
+@layer utilities {
+  .text-silver {
+    background: linear-gradient(180deg, #ffffff 0%, #d8d8de 45%, #9a9aa3 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .text-silver-shine {
+    background: linear-gradient(110deg, #9a9aa3 20%, #ffffff 40%, #c0c0c0 55%, #9a9aa3 75%);
+    background-size: 200% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: var(--animate-shimmer);
+  }
+  .text-purple-glow {
+    background: linear-gradient(100deg, #d9a6ff 0%, #b54dff 45%, #9e00ff 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .bg-grain {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
+  }
+  .bg-dot-grid {
+    background-image: radial-gradient(rgb(255 255 255 / 0.07) 1px, transparent 1px);
+    background-size: 22px 22px;
+  }
+  .mask-fade-b {
+    mask-image: linear-gradient(to bottom, black 60%, transparent);
+  }
+  .mask-fade-x {
+    mask-image: linear-gradient(to right, transparent, black 12%, black 88%, transparent);
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.inv-theme {
+  --page: #07060b;
+  --ink: #ffffff;
+  --muted: rgb(255 255 255 / 0.6);
+  --faint: rgb(255 255 255 / 0.4);
+  --surface: #111017;
+  --surface-2: #18161f;
+  --line: rgb(255 255 255 / 0.08);
+  color-scheme: dark;
+}
+.inv-theme[data-theme='light'] {
+  --page: #f5f3f9;
+  --ink: #0b0a10;
+  --muted: rgb(11 10 16 / 0.62);
+  --faint: rgb(11 10 16 / 0.45);
+  --surface: #ffffff;
+  --surface-2: #efecf5;
+  --line: rgb(11 10 16 / 0.09);
+  color-scheme: light;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
