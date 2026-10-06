@@ -14,10 +14,10 @@ function series(length, base, spread, seed, trend = 0) {
 }
 
 export const PARTNER = {
-  name: 'Anje Kruger',
-  company: 'Kruger Capital',
-  email: 'anje@krugercapital.com',
-  initials: 'AK',
+  name: 'Timo Garcia',
+  company: 'Enginericorp',
+  email: 'timo@enginericorp.com',
+  initials: 'TC',
 };
 
 export const PORTFOLIO = {
