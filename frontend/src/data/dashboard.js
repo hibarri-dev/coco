@@ -366,7 +366,7 @@ export const PAYOUTS = {
   upcoming: { amount: 4218, date: 'Oct 13, 2026', period: 'Sep 01 – Sep 30, 2026' },
   breakdown: [
     { label: 'Gross compute revenue', value: 8092 },
-    { label: 'CoCo marketing & management fee (25%)', value: -2023 },
+    { label: 'CoCo marketing & management fee (20%)', value: -1618 },
     { label: 'Data-center costs', value: -1474 },
     { label: 'Payment processing', value: -235 },
     { label: 'Hardware reserve (2%)', value: -142 },
