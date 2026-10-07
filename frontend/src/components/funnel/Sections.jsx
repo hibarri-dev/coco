@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowRight, Building, Check, Circle, Plus, Quote, Server, X } from 'lucide-react';
 import { Reveal, EASE } from '../ui/motion';
 import { TESTIMONIALS, FAQ, COMPARISON } from '../../data/funnel';
-import { COMPANIES } from '../../config/funnel';
+import { COMPANIES, PRESS } from '../../config/funnel';
 
 const initials = (name) =>
   name
@@ -45,7 +45,7 @@ function Point({ status, text }) {
   );
 }
 
-export function RealEstateVsServers() {
+export function RealEstateVsServers({ showCta = true }) {
   return (
     <section className="mx-auto max-w-[1060px] px-4 py-20 sm:px-6 sm:py-28">
       <Reveal className="text-center">
@@ -73,9 +73,11 @@ export function RealEstateVsServers() {
           ))}
         </div>
       </Reveal>
-      <div className="mt-8 flex justify-center">
-        <InvestCta />
-      </div>
+      {showCta && (
+        <div className="mt-8 flex justify-center">
+          <InvestCta />
+        </div>
+      )}
     </section>
   );
 }
@@ -129,6 +131,38 @@ export function Companies() {
               </div>
             ),
           )}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function PressLogo({ item, compact }) {
+  if (item.logo) {
+    return <img src={item.logo} alt={item.name} className={`w-auto opacity-70 grayscale ${compact ? 'h-5' : 'h-7 sm:h-8'}`} />;
+  }
+  return <span className={`whitespace-nowrap leading-none text-[var(--muted)] ${item.wordmark}`}>{item.name}</span>;
+}
+
+export function AsSeenOn({ compact = false, className = '' }) {
+  if (compact) {
+    return (
+      <div className={`flex flex-wrap items-center gap-x-5 gap-y-2 text-[13px] ${className}`}>
+        <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--faint)]">As seen on</span>
+        {PRESS.map((p) => (
+          <PressLogo key={p.name} item={p} compact />
+        ))}
+      </div>
+    );
+  }
+  return (
+    <section className={`border-b border-[var(--line)] py-8 sm:py-10 ${className}`}>
+      <div className="mx-auto max-w-[1180px] px-6">
+        <div className="text-center text-[12px] font-semibold uppercase tracking-[0.2em] text-[var(--faint)]">As seen on</div>
+        <div className="mt-5 flex flex-wrap items-center justify-center gap-x-10 gap-y-4 text-[17px] sm:gap-x-16 sm:text-[20px]">
+          {PRESS.map((p) => (
+            <PressLogo key={p.name} item={p} />
+          ))}
         </div>
       </div>
     </section>

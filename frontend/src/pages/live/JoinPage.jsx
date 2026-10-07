@@ -6,6 +6,7 @@ import FunnelLayout from '../../components/funnel/FunnelLayout';
 import Countdown from '../../components/funnel/Countdown';
 import { Modal, Field } from '../../components/funnel/Modal';
 import { Reveal, EASE } from '../../components/ui/motion';
+import { AsSeenOn } from '../../components/funnel/Sections';
 import { BROADCAST } from '../../config/funnel';
 import { dayLabel, formatClock, getRegistration, getSchedule, saveRegistration, timeZoneLabel, useNow } from '../../lib/broadcast';
 import { useVisitor } from '../../lib/visitor';
@@ -220,6 +221,7 @@ function WhitePaper({ lead, msUntil, onContinue }) {
       >
         Go to the broadcast room
       </button>
+      <AsSeenOn compact className="mt-5 justify-center border-t border-[var(--line)] pt-4" />
     </div>
   );
 }
@@ -318,6 +320,8 @@ export default function JoinPage() {
           </div>
         </div>
       </section>
+
+      <AsSeenOn />
 
       <section className="mx-auto max-w-[1180px] px-6 py-20 sm:py-28">
         <Reveal className="text-center">
