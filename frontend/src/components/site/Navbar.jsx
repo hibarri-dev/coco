@@ -51,6 +51,7 @@ const MENUS = [
     },
     items: [
       { title: 'Cloud Partners', desc: 'Own servers and earn from every vCPU sold', href: '/investors' },
+      { title: 'Server packages', desc: 'Pick a data center and price your servers', href: '/packages' },
       { title: 'Affiliate program', desc: 'Get paid for each developer you refer', href: '/#partners' },
       { title: 'About', desc: 'The team and mission behind CoCo', href: '/#cta' },
     ],
@@ -64,7 +65,8 @@ function MenuPanel({ menu }) {
     <div className="grid grid-cols-2 gap-2 w-[640px]">
       <NavLink
         href={feature.href}
-        className="group relative row-span-3 flex flex-col overflow-hidden rounded-xl bg-[#14131b] p-5 hover:bg-[#191822] transition-colors min-h-[244px]"
+        style={{ gridRow: `span ${items.length}` }}
+        className="group relative flex flex-col overflow-hidden rounded-xl bg-[#14131b] p-5 hover:bg-[#191822] transition-colors min-h-[244px]"
       >
         <div className="flex items-center gap-2">
           <span className="font-semibold text-[15px] text-white">{feature.title}</span>
@@ -294,12 +296,12 @@ export default function Navbar({ themeToggle = true }) {
         </div>
       </div>
 
-      {createPortal(<AnimatePresence>{mobileOpen && <MobileMenu onClose={() => setMobileOpen(false)} />}</AnimatePresence>, document.body)}
+      {createPortal(<AnimatePresence>{mobileOpen && <MobileMenu onClose={() => setMobileOpen(false)} themeToggle={themeToggle} />}</AnimatePresence>, document.body)}
     </header>
   );
 }
 
-function MobileMenu({ onClose }) {
+function MobileMenu({ onClose, themeToggle }) {
   const [expanded, setExpanded] = useState(null);
   const { theme } = useTheme();
   return (
@@ -318,9 +320,12 @@ function MobileMenu({ onClose }) {
         <Link to="/" onClick={onClose} className="text-white" aria-label="CoCo home">
           <Logo tagline={false} className="h-[22px] w-auto" />
         </Link>
-        <button onClick={onClose} className="grid h-10 w-10 place-items-center rounded-lg text-white/80 hover:bg-white/10" aria-label="Close menu">
-          <X size={22} />
-        </button>
+        <div className="flex items-center gap-2">
+          {themeToggle && <ThemeToggle />}
+          <button onClick={onClose} className="grid h-10 w-10 place-items-center rounded-lg text-white/80 hover:bg-white/10" aria-label="Close menu">
+            <X size={22} />
+          </button>
+        </div>
       </div>
       <div className="flex-1 overflow-y-auto overscroll-contain px-5 py-3">
         <Link

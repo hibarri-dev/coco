@@ -1,9 +1,12 @@
+import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   ArrowLeft, MapPin, Activity, Cpu, MemoryStick, HardDrive, Network, Microchip, TriangleAlert, Info, CircleAlert,
-  Building, Users, CircleCheck, LifeBuoy, CalendarDays, Hash, Clock,
+  Building, Users, CircleCheck, LifeBuoy, CalendarDays, Hash, Clock, Unplug,
 } from 'lucide-react';
+import { useTheme } from '../../hooks/useTheme';
 import { Card, CardHeader, Badge, Meter, Button, page } from '../../components/dashboard/ui';
 import { Bars, Ring, Sparkline } from '../../components/dashboard/charts';
 import { CustomersTable } from '../../components/dashboard/tables';
@@ -57,9 +60,63 @@ const ALERT_STYLE = {
   info: { icon: Info, cls: 'border-sky-400/25 bg-sky-400/[0.06] text-sky-300' },
 };
 
+function DisconnectDialog({ server, onClose, onConfirm }) {
+  const { theme } = useTheme();
+
+  useEffect(() => {
+    const onKey = (e) => e.key === 'Escape' && onClose();
+    document.addEventListener('keydown', onKey);
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.body.style.overflow = '';
+    };
+  }, [onClose]);
+
+  return createPortal(
+    <div data-theme={theme} className="dash-theme fixed inset-0 z-[90] flex items-end justify-center text-white sm:items-center sm:p-6">
+      <button aria-label="Close" className="absolute inset-0 bg-[rgb(0_0_0/0.6)] backdrop-blur-sm" onClick={onClose} />
+      <motion.div
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Disconnect server #${server.id}`}
+        initial={{ opacity: 0, y: 24 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="relative w-full rounded-t-3xl border border-white/10 bg-[#0e0d13] p-6 sm:max-w-[460px] sm:rounded-3xl sm:p-7"
+      >
+        <span className="grid h-11 w-11 place-items-center rounded-xl bg-rose-400/10 text-rose-300"><Unplug size={20} /></span>
+        <h2 className="mt-4 text-[20px] font-bold">Disconnect server #{server.id}?</h2>
+        <p className="mt-1.5 text-[13.5px] text-white/55">Your server stops taking new workloads from the CoCo cloud.</p>
+        <ul className="mt-5 space-y-2.5 text-[13.5px] text-white/75">
+          {[
+            'No cancellation fee.',
+            "You're still paid out for this month's outstanding earnings on the 28th.",
+            `You can visit, collect or deal with ${server.datacenter.split(' · ')[0]} directly at any time.`,
+            'Sell it yourself, back to us, or into the CoCo owners network.',
+          ].map((t) => (
+            <li key={t} className="flex gap-2.5">
+              <CircleCheck size={15} className="mt-0.5 shrink-0 text-emerald-300" />
+              {t}
+            </li>
+          ))}
+        </ul>
+        <div className="mt-7 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <Button variant="ghost" onClick={onClose}>Keep connected</Button>
+          <button onClick={onConfirm} className="inline-flex items-center justify-center gap-2 rounded-xl bg-rose-500 px-4 py-2.5 text-[13.5px] font-semibold text-white transition hover:bg-rose-600">
+            <Unplug size={15} /> Disconnect server
+          </button>
+        </div>
+      </motion.div>
+    </div>,
+    document.body,
+  );
+}
+
 export default function ServerDetail() {
   const { id } = useParams();
   const s = SERVERS.find((x) => x.id === id);
+  const [confirming, setConfirming] = useState(false);
+  const [disconnected, setDisconnected] = useState(false);
 
   if (!s) {
     return (
@@ -93,10 +150,32 @@ export default function ServerDetail() {
             <span className="flex items-center gap-1.5"><Activity size={14} />{s.uptime}% uptime</span>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button variant="ghost"><LifeBuoy size={15} /> Request support</Button>
+          {!disconnected && (
+            <Button variant="ghost" onClick={() => setConfirming(true)} className="hover:!border-rose-400/40 hover:!text-rose-300">
+              <Unplug size={15} /> Disconnect
+            </Button>
+          )}
         </div>
       </div>
+
+      {disconnected && (
+        <div className="mb-4 flex items-start gap-3 rounded-2xl border border-amber-400/25 bg-amber-400/[0.06] px-4 py-3 text-[13.5px] text-amber-300">
+          <Unplug size={16} className="mt-0.5 shrink-0" />
+          Disconnect requested. Workloads are being moved off this server and your outstanding earnings will be paid on the 28th.
+        </div>
+      )}
+      {confirming && (
+        <DisconnectDialog
+          server={s}
+          onClose={() => setConfirming(false)}
+          onConfirm={() => {
+            setConfirming(false);
+            setDisconnected(true);
+          }}
+        />
+      )}
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
         <KPI label="Purchase Price" value={usd(s.purchasePrice)} sub={`Bought ${s.purchasedOn}`} icon={CalendarDays} />

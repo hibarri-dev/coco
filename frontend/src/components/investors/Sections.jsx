@@ -1,12 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AnimatePresence, motion, useScroll, useTransform } from 'framer-motion';
-import {
-  Server, Megaphone, Receipt, Activity, Building, Wallet, Check, Plus, ArrowRight, Cpu, MemoryStick,
-  HardDrive, Microchip, Network, Zap, CircleCheck, MapPin, PackageCheck, Truck,
-} from 'lucide-react';
+import { Server, Megaphone, Receipt, Activity, Building, Wallet, Check, Plus, ArrowRight, Zap, CircleCheck, PackageCheck, Truck } from 'lucide-react';
 import { Reveal, EASE } from '../ui/motion';
-import { SERVER_PACKAGES, usd } from '../../data/packages';
 
 const Eyebrow = ({ children }) => <div className="text-[13px] font-semibold text-coco-violet">{children}</div>;
 const Accent = ({ children }) => <span className="text-purple-glow">{children}</span>;
@@ -117,7 +113,7 @@ export function Bento() {
           { icon: Activity, t: 'Live monitoring', d: 'CPU, RAM, GPU, network and uptime for every server, refreshed in real time.' },
           { icon: Building, t: 'Data-center relations', d: 'We negotiate colocation, power and remote hands so you never have to.' },
           { icon: Megaphone, t: 'Marketing included', d: 'CoCo is promoted as a leading NeoCloud across developer networks.' },
-          { icon: Wallet, t: 'Monthly payouts', d: 'Net revenue lands in your bank account on the 13th of every month.' },
+          { icon: Wallet, t: 'Monthly payouts', d: 'Net revenue lands in your bank account on the 28th of every month.' },
         ].map((f, i) => (
           <Reveal key={f.t} delay={i * 0.05}>
             <div className="h-full rounded-3xl border border-[var(--line)] bg-[var(--surface)] p-6 transition-colors hover:border-coco-violet/40">
@@ -137,7 +133,7 @@ export function Bento() {
 const STEPS = [
   {
     title: 'Choose a server package',
-    body: 'Pick the hardware that fits your budget. Pay securely through Stripe and your order is locked in instantly.',
+    body: 'Pick a data center and the hardware that fits your budget. Pay by card or wire transfer and your order is locked in instantly.',
     tone: 'bg-[#d9c4ff] text-[#1a0b2e]',
     rows: [['Core 64', '128 vCPU · 512 GB', 'Selected'], ['Data center', 'Ashburn IAD-3', 'Tier IV'], ['Payment', 'Stripe · card or ACH', 'Paid']],
   },
@@ -221,245 +217,14 @@ export function HowItWorks() {
   );
 }
 
-/* ---------- Server packages (real-time stock + Stripe checkout) ---------- */
-
-const CITIES = ['Austin', 'London', 'Cape Town', 'Toronto', 'Dubai', 'Singapore', 'Denver', 'Johannesburg', 'Miami', 'Berlin'];
-
-function useLiveTicker() {
-  const [event, setEvent] = useState(null);
-  useEffect(() => {
-    let i = 0;
-    const fire = () => {
-      const pkg = SERVER_PACKAGES[(i * 3 + 1) % SERVER_PACKAGES.length];
-      setEvent({ id: i, city: CITIES[i % CITIES.length], pkg: pkg.name, ago: ['just now', '1 min ago', '3 min ago'][i % 3] });
-      i++;
-    };
-    fire();
-    const id = setInterval(fire, 4200);
-    return () => clearInterval(id);
-  }, []);
-  return event;
-}
-
-export function Packages({ onBuy }) {
-  const [period, setPeriod] = useState('monthly');
-  const event = useLiveTicker();
-  const mult = period === 'monthly' ? 1 : 12;
-
-  return (
-    <section id="packages" className="mx-auto max-w-[1240px] px-6 pb-28 sm:pb-36">
-      <Reveal className="text-center">
-        <Eyebrow>Server packages</Eyebrow>
-        <h2 className="mt-4 text-4xl sm:text-5xl font-bold tracking-tight">
-          Investing, <Accent>made easy</Accent>
-        </h2>
-        <p className="mx-auto mt-4 max-w-xl text-[17px] text-[var(--muted)]">
-          Live inventory, transparent pricing and projected revenue for every server. Buy in minutes, earn for years.
-        </p>
-        <div className="mt-8 flex flex-col items-center gap-4">
-          <div className="relative flex rounded-full border border-[var(--line)] bg-[var(--surface)] p-1 text-[13px] font-medium">
-            {[
-              ['monthly', 'Monthly revenue'],
-              ['yearly', 'Yearly revenue'],
-            ].map(([k, l]) => (
-              <button key={k} onClick={() => setPeriod(k)} className={`relative z-10 rounded-full px-4 py-1.5 transition-colors ${period === k ? 'text-white' : 'text-[var(--muted)] hover:text-[var(--ink)]'}`}>
-                {period === k && <motion.span layoutId="period-pill" className="absolute inset-0 -z-10 rounded-full bg-coco-purple" transition={{ type: 'spring', stiffness: 400, damping: 32 }} />}
-                {l}
-              </button>
-            ))}
-          </div>
-          <div className="h-8">
-            <AnimatePresence mode="wait">
-              {event && (
-                <motion.div
-                  key={event.id}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -8 }}
-                  className="flex items-center gap-2 rounded-full border border-[var(--line)] bg-[var(--surface)] px-3.5 py-1.5 text-[12px] text-[var(--muted)]"
-                >
-                  <span className="relative flex h-2 w-2">
-                    <span className="absolute inset-0 rounded-full bg-emerald-400 animate-pulse-ring" />
-                    <span className="relative h-2 w-2 rounded-full bg-emerald-400" />
-                  </span>
-                  A partner in <b className="font-semibold text-[var(--ink)]">{event.city}</b> reserved a {event.pkg} · {event.ago}
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        </div>
-      </Reveal>
-
-      <div className="mt-12 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {SERVER_PACKAGES.map((p, i) => {
-          const featured = p.featured;
-          const muted = featured ? 'text-white/70' : 'text-[var(--muted)]';
-          return (
-            <Reveal key={p.id} delay={i * 0.06}>
-              <div
-                className={`relative flex h-full flex-col rounded-3xl p-6 transition-transform hover:-translate-y-1 ${
-                  featured ? 'bg-coco-purple text-white shadow-[0_30px_80px_-20px_rgba(158,0,255,0.6)]' : 'border border-[var(--line)] bg-[var(--surface)]'
-                }`}
-              >
-                {featured && <span className="absolute right-5 top-5 rounded-full bg-black px-2.5 py-1 text-[11px] font-semibold text-white">Most popular</span>}
-                <h3 className="text-xl font-bold">{p.name}</h3>
-                <p className={`mt-1 text-[13px] ${muted}`}>{p.tagline}</p>
-                <div className="mt-6 flex items-baseline gap-1.5">
-                  <span className="text-4xl font-bold tracking-tight tabular">{usd(p.price)}</span>
-                  <span className={`text-[13px] ${muted}`}>one-off</span>
-                </div>
-                <div className={`mt-2 rounded-xl px-3 py-2 text-[13px] ${featured ? 'bg-white/15' : 'bg-coco-purple/10'}`}>
-                  <span className={muted}>Projected </span>
-                  <AnimatePresence mode="wait">
-                    <motion.span key={period} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className={`font-semibold ${featured ? 'text-white' : 'text-coco-violet'}`}>
-                      {usd(p.revenueLow * mult)}–{usd(p.revenueHigh * mult)}
-                    </motion.span>
-                  </AnimatePresence>
-                  <span className={muted}> / {period === 'monthly' ? 'mo' : 'yr'}</span>
-                </div>
-                <button
-                  onClick={() => onBuy(p)}
-                  className={`mt-5 flex items-center justify-center gap-2 rounded-xl py-3 text-[14px] font-semibold transition ${
-                    featured ? 'bg-black text-white hover:bg-black/80' : 'bg-coco-purple text-white hover:bg-[#ad1fff]'
-                  }`}
-                >
-                  Buy server <ArrowRight size={15} />
-                </button>
-                <div className="mt-3 flex items-center justify-between text-[12px]">
-                  <span className={`flex items-center gap-1.5 ${p.stock <= 2 ? (featured ? 'text-amber-200' : 'text-amber-500') : muted}`}>
-                    <span className={`h-1.5 w-1.5 rounded-full ${p.stock <= 2 ? 'bg-amber-400' : 'bg-emerald-400'}`} />
-                    {p.stock <= 2 ? `Only ${p.stock} left` : `${p.stock} in stock`}
-                  </span>
-                  <span className={muted}>Live in {p.leadTime}</span>
-                </div>
-                <div className={`mt-6 border-t pt-5 ${featured ? 'border-white/20' : 'border-[var(--line)]'}`}>
-                  <div className={`text-[11px] font-semibold uppercase tracking-widest ${muted}`}>Hardware</div>
-                  <ul className="mt-3 space-y-2.5 text-[13.5px]">
-                    {[
-                      [Cpu, `${p.cores} cores · ${p.vcpu} vCPU`],
-                      [MemoryStick, p.ram],
-                      [HardDrive, p.storage],
-                      [p.gpu ? Microchip : Network, p.gpu ?? `${p.network} uplink`],
-                      [MapPin, p.locations.join(', ')],
-                    ].map(([Icon, label]) => (
-                      <li key={label} className="flex items-center gap-2.5">
-                        <Icon size={15} className={featured ? 'text-white/80' : 'text-coco-violet'} />
-                        {label}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            </Reveal>
-          );
-        })}
-      </div>
-      <p className="mx-auto mt-6 max-w-2xl text-center text-[12px] text-[var(--faint)]">
-        Projections are based on current network utilisation, pricing and data-center costs, and are shown net of fees. Actual revenue varies and is not guaranteed.
-      </p>
-    </section>
-  );
-}
-
-/* ---------- Returns calculator ---------- */
-
-export function Calculator({ onBuy }) {
-  const [pkgId, setPkgId] = useState('core-64');
-  const [count, setCount] = useState(2);
-  const [util, setUtil] = useState(80);
-  const pkg = SERVER_PACKAGES.find((p) => p.id === pkgId);
-
-  const { invest, monthly, yearly, payback } = useMemo(() => {
-    const mid = (pkg.revenueLow + pkg.revenueHigh) / 2;
-    const m = Math.round(mid * (util / 80) * count);
-    return { invest: pkg.price * count, monthly: m, yearly: m * 12, payback: m ? (pkg.price * count) / m : 0 };
-  }, [pkg, count, util]);
-
-  return (
-    <section id="calculator" className="mx-auto max-w-[1180px] px-6 pb-28 sm:pb-36">
-      <div className="grid gap-10 rounded-[32px] border border-[var(--line)] bg-[var(--surface)] p-6 sm:p-10 lg:grid-cols-2">
-        <div>
-          <Eyebrow>Returns calculator</Eyebrow>
-          <h2 className="mt-4 text-3xl sm:text-4xl font-bold tracking-tight">See what your servers could earn</h2>
-          <div className="mt-8 space-y-7">
-            <div>
-              <div className="mb-3 text-[14px] font-semibold">Package</div>
-              <div className="flex flex-wrap gap-2">
-                {SERVER_PACKAGES.map((p) => (
-                  <button
-                    key={p.id}
-                    onClick={() => setPkgId(p.id)}
-                    className={`rounded-full border px-4 py-2 text-[13px] font-medium transition ${
-                      pkgId === p.id ? 'border-coco-purple bg-coco-purple text-white' : 'border-[var(--line)] text-[var(--muted)] hover:text-[var(--ink)]'
-                    }`}
-                  >
-                    {p.name}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <Slider label="Number of servers" value={count} min={1} max={10} onChange={setCount} format={(v) => `${v}`} />
-            <Slider label="Expected utilisation" value={util} min={40} max={95} onChange={setUtil} format={(v) => `${v}%`} />
-          </div>
-        </div>
-        <div className="flex flex-col justify-between rounded-3xl bg-[#0d0716] p-7 text-white">
-          <div className="space-y-5">
-            <Stat label="Total investment" value={usd(invest)} />
-            <Stat label="Projected monthly revenue" value={usd(monthly)} big />
-            <div className="grid grid-cols-2 gap-4">
-              <Stat label="Per year" value={usd(yearly)} />
-              <Stat label="Estimated payback" value={`${payback.toFixed(1)} months`} />
-            </div>
-          </div>
-          <button onClick={() => onBuy(pkg, count)} className="mt-8 flex items-center justify-center gap-2 rounded-xl bg-white py-3.5 font-semibold text-black hover:bg-white/90 transition">
-            Reserve {count > 1 ? `${count}× ` : ''}{pkg.name} <ArrowRight size={16} />
-          </button>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function Slider({ label, value, min, max, onChange, format }) {
-  const pct = ((value - min) / (max - min)) * 100;
-  return (
-    <label className="block">
-      <div className="mb-3 flex items-center justify-between text-[14px]">
-        <span className="font-semibold">{label}</span>
-        <span className="rounded-md bg-coco-purple/10 px-2 py-0.5 font-semibold text-coco-violet tabular">{format(value)}</span>
-      </div>
-      <input
-        type="range"
-        min={min}
-        max={max}
-        value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
-        className="h-2 w-full cursor-pointer appearance-none rounded-full accent-coco-purple"
-        style={{ background: `linear-gradient(90deg, #9e00ff ${pct}%, var(--surface-2) ${pct}%)` }}
-      />
-    </label>
-  );
-}
-
-function Stat({ label, value, big }) {
-  return (
-    <div>
-      <div className="text-[12px] text-white/50">{label}</div>
-      <motion.div key={value} initial={{ opacity: 0.4 }} animate={{ opacity: 1 }} className={`mt-1 font-bold tabular tracking-tight ${big ? 'text-5xl text-purple-glow' : 'text-2xl'}`}>
-        {value}
-      </motion.div>
-    </div>
-  );
-}
-
 /* ---------- FAQ ---------- */
 
 const FAQS = [
   ['Do I actually own the server?', 'Yes. Each server is purchased in your name, recorded with its serial number in your dashboard, and remains your asset. CoCo operates it under a management agreement.'],
-  ['How are payouts calculated?', 'We collect customer payments, subtract the CoCo management fee, data-center costs and payment processing, then pay the net amount to your bank account every month. Every line item is visible under Payouts.'],
+  ['How are payouts calculated?', 'We collect what developers pay for your servers, keep CoCo’s 20% fee and pay the rest to your bank account on the 28th of every month. Rack space is prepaid for two years, so nothing else is deducted. Every line item is visible under Payouts.'],
   ['What happens if hardware fails?', 'Workloads are moved to other servers automatically. Our team handles repairs through the data center, and parts are covered by manufacturer warranty plus a small hardware reserve.'],
-  ['How long until my server earns?', 'Most servers go live within 7–21 days of purchase, depending on the package. You can watch each stage, from procurement to burn-in, in your dashboard.'],
-  ['Can I sell or exit later?', 'Yes. You can list your server for transfer to another partner or request a buy-back valuation at any time after the first 12 months.'],
+  ['How long until my server earns?', 'Most servers go live within 4–6 days. Shipping to your data center takes 24–72 hours, then configuration, linking to the CoCo cloud and dashboard activation take about a day each. You can watch every stage in your dashboard.'],
+  ['Can I sell or exit later?', 'Yes, any time. There is no cancellation fee: click “Disconnect” in your dashboard and you are still paid for that month’s earnings. You can collect the servers from the data center, sell them yourself, or sell them back to us or into the CoCo owners network. If you earn less than a 10% ROI in year one, we buy the server back at cost price.'],
 ];
 
 export function Faq() {
@@ -517,7 +282,7 @@ export function InvestorCta() {
             </a>
           </div>
           <div className="mt-10 flex flex-wrap justify-center gap-x-6 gap-y-2 text-[13px] text-white/70">
-            {[[Zap, 'Live in 7–21 days'], [PackageCheck, 'Warranty-backed hardware'], [Truck, 'We handle logistics'], [CircleCheck, 'Monthly payouts']].map(([Icon, t]) => (
+            {[[Zap, 'Live in 4–6 days'], [PackageCheck, 'Warranty-backed hardware'], [Truck, 'We handle logistics'], [CircleCheck, 'Monthly payouts']].map(([Icon, t]) => (
               <span key={t} className="flex items-center gap-1.5"><Icon size={14} />{t}</span>
             ))}
           </div>

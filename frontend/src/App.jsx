@@ -4,6 +4,11 @@ import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 const LandingPage = lazy(() => import('./pages/LandingPage'));
 const InvestorsPage = lazy(() => import('./pages/InvestorsPage'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
+const PackagesPage = lazy(() => import('./pages/PackagesPage'));
+const JoinPage = lazy(() => import('./pages/live/JoinPage'));
+const RoomPage = lazy(() => import('./pages/live/RoomPage'));
+const OfferPage = lazy(() => import('./pages/live/OfferPage'));
+const CheckoutPage = lazy(() => import('./pages/live/CheckoutPage'));
 
 function ScrollManager() {
   const { pathname, hash } = useLocation();
@@ -34,6 +39,12 @@ export default function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/investors" element={<InvestorsPage />} />
           <Route path="/dashboard/*" element={<Dashboard />} />
+          <Route path="/packages" element={<PackagesPage />} />
+          <Route path="/checkout" element={<CheckoutPage />} />
+          <Route path="/live" element={<JoinPage />} />
+          <Route path="/live/room" element={<RoomPage />} />
+          <Route path="/live/offer" element={<OfferPage />} />
+          <Route path="/live/checkout" element={<CheckoutPage funnel />} />
           <Route path="*" element={<LandingPage />} />
         </Routes>
       </Suspense>

@@ -220,7 +220,9 @@
 }
 .dash-theme[data-theme='light'] { background-color: #f4f2f8; }
 
-:is(.dash-theme, .site-theme)[data-theme='light'] :is(.bg-\[\#08070c\], .bg-\[\#14131b\]) { background-color: #f4f2f8; }
+:is(.dash-theme, .site-theme)[data-theme='light'] :is(.bg-\[\#08070c\], .bg-\[\#14131b\]),
+:is(.dash-theme, .site-theme)[data-theme='light'].bg-\[\#08070c\],
+:is(.dash-theme, .site-theme)[data-theme='light'].bg-\[\#14131b\] { background-color: #f4f2f8; }
 :is(.dash-theme, .site-theme)[data-theme='light'] .bg-\[\#08070c\]\/80 { background-color: rgb(244 242 248 / 0.82); }
 :is(.dash-theme, .site-theme)[data-theme='light'] :is(.bg-\[\#0a090e\], .bg-\[\#16151d\], .bg-\[\#0f0e14\], .bg-\[\#0d0c12\]) { background-color: #ffffff; }
 :is(.dash-theme, .site-theme)[data-theme='light'] .bg-\[\#0e0d13\] {
