@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowRight, Check, Plus, Quote } from 'lucide-react';
+import { ArrowRight, Building, Check, Circle, Plus, Quote, Server, X } from 'lucide-react';
 import { Reveal, EASE } from '../ui/motion';
-import { TESTIMONIALS, FAQ } from '../../data/funnel';
+import { TESTIMONIALS, FAQ, COMPARISON } from '../../data/funnel';
 import { COMPANIES } from '../../config/funnel';
 
 const initials = (name) =>
@@ -24,6 +24,59 @@ export function InvestCta({ to = '/live/offer', className = '' }) {
       Start my investment journey!
       <ArrowRight size={18} className="transition-transform group-hover:translate-x-1" />
     </Link>
+  );
+}
+
+const MARK = {
+  good: { icon: Check, cls: 'bg-emerald-500/15 text-emerald-500', label: 'Advantage' },
+  bad: { icon: X, cls: 'bg-rose-500/15 text-rose-500', label: 'Disadvantage' },
+  neutral: { icon: Circle, cls: 'bg-amber-500/15 text-amber-500', label: 'Neutral' },
+};
+
+function Point({ status, text }) {
+  const { icon: Icon, cls, label } = MARK[status];
+  return (
+    <div className="flex items-start gap-2.5 px-3 py-3 sm:px-5 sm:py-3.5">
+      <span className={`mt-px grid h-5 w-5 shrink-0 place-items-center rounded-full ${cls}`} role="img" aria-label={label}>
+        <Icon size={12} strokeWidth={3} fill={status === 'neutral' ? 'currentColor' : 'none'} />
+      </span>
+      <span className="text-[13px] leading-snug sm:text-[14.5px]">{text}</span>
+    </div>
+  );
+}
+
+export function RealEstateVsServers() {
+  return (
+    <section className="mx-auto max-w-[1060px] px-4 py-20 sm:px-6 sm:py-28">
+      <Reveal className="text-center">
+        <div className="text-[13px] font-semibold text-coco-violet">Real Estate vs Digital Estate</div>
+        <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-5xl">Property vs servers</h2>
+        <p className="mx-auto mt-4 max-w-xl text-[16px] text-[var(--muted)]">How owning servers compares with owning property, point by point.</p>
+      </Reveal>
+      <Reveal delay={0.08} className="mt-12">
+        <div className="overflow-hidden rounded-3xl border border-[var(--line)] bg-[var(--surface)]">
+          <div className="grid grid-cols-2 border-b border-[var(--line)] text-[14px] font-bold sm:text-[16px]">
+            <div className="flex items-center gap-2 px-3 py-4 sm:px-5">
+              <Building size={17} className="shrink-0 text-[var(--muted)]" /> Property
+            </div>
+            <div className="flex items-center gap-2 border-l border-[var(--line)] bg-coco-purple/[0.07] px-3 py-4 text-coco-violet sm:px-5">
+              <Server size={17} className="shrink-0" /> Servers
+            </div>
+          </div>
+          {COMPARISON.map(([property, servers]) => (
+            <div key={property[1]} className="grid grid-cols-2 border-b border-[var(--line)] last:border-b-0">
+              <Point status={property[0]} text={property[1]} />
+              <div className="border-l border-[var(--line)] bg-coco-purple/[0.04]">
+                <Point status={servers[0]} text={servers[1]} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </Reveal>
+      <div className="mt-8 flex justify-center">
+        <InvestCta />
+      </div>
+    </section>
   );
 }
 

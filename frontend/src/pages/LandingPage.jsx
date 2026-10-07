@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { ArrowRight, ChevronRight } from 'lucide-react';
 import Navbar from '../components/site/Navbar';
 import Footer from '../components/site/Footer';
-import TributeWall from '../components/landing/TributeWall';
+import NightSky from '../components/landing/NightSky';
 import HeroDemo from '../components/landing/HeroDemo';
 import Features from '../components/landing/Features';
 import { Testimonials, Stats, Pricing, PartnerBand, FinalCta, Featured } from '../components/landing/Sections';
@@ -21,7 +21,7 @@ function Hero() {
   return (
     <section className="px-2 sm:px-3 pt-2">
       <div className="relative overflow-hidden rounded-[20px] sm:rounded-[28px] border border-white/[0.06]">
-        <TributeWall light={light} />
+        <NightSky light={light} />
         <div className="relative mx-auto max-w-[1180px] px-5 pt-20 sm:pt-28 pb-10 sm:pb-16 text-center">
           <motion.div {...fadeUp(0)}>
             <a
