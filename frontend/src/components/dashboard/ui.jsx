@@ -11,8 +11,8 @@ export function Card({ className = '', children, ...rest }) {
 
 export function CardHeader({ title, sub, action, icon: Icon }) {
   return (
-    <div className="flex items-start justify-between gap-4 px-5 pt-5">
-      <div className="flex items-center gap-2.5">
+    <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3 px-4 pt-4 sm:px-5 sm:pt-5">
+      <div className="flex min-w-0 items-center gap-2.5">
         {Icon && (
           <span className="grid h-8 w-8 place-items-center rounded-lg bg-white/[0.05] text-white/70">
             <Icon size={15} />
@@ -30,10 +30,10 @@ export function CardHeader({ title, sub, action, icon: Icon }) {
 
 export function PageHeader({ title, sub, actions }) {
   return (
-    <div className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-      <div>
-        <h1 className="text-[28px] font-bold tracking-tight">{title}</h1>
-        {sub && <p className="mt-1 text-[14px] text-white/50">{sub}</p>}
+    <div className="mb-6 flex flex-col gap-4 sm:mb-7 sm:flex-row sm:items-end sm:justify-between">
+      <div className="min-w-0">
+        <h1 className="text-[24px] font-bold tracking-tight sm:text-[28px]">{title}</h1>
+        {sub && <p className="mt-1 text-[13.5px] text-white/50 sm:text-[14px]">{sub}</p>}
       </div>
       {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
     </div>
@@ -42,21 +42,21 @@ export function PageHeader({ title, sub, actions }) {
 
 export function Stat({ label, value, sub, icon: Icon, trend, accent, children, className = '' }) {
   return (
-    <Card className={`relative overflow-hidden p-5 ${className}`}>
+    <Card className={`relative min-w-0 overflow-hidden p-4 sm:p-5 ${className}`}>
       {accent && <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-coco-purple/20 blur-2xl" />}
-      <div className="relative flex items-center justify-between">
-        <span className="text-[12.5px] font-medium text-white/50">{label}</span>
-        {Icon && <Icon size={16} className="text-white/30" />}
+      <div className="relative flex items-center justify-between gap-2">
+        <span className="truncate text-[12px] font-medium text-white/50 sm:text-[12.5px]">{label}</span>
+        {Icon && <Icon size={16} className="shrink-0 text-white/30" />}
       </div>
-      <div className="relative mt-3 flex items-baseline gap-2">
-        <span className="text-[26px] font-bold tracking-tight tabular">{value}</span>
+      <div className="relative mt-2.5 flex flex-wrap items-baseline gap-x-2 sm:mt-3">
+        <span className="whitespace-nowrap text-[20px] font-bold tracking-tight tabular sm:text-[26px]">{value}</span>
         {trend !== undefined && (
           <span className={`text-[12px] font-semibold ${trend >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
             {trend >= 0 ? '↑' : '↓'} {Math.abs(trend).toFixed(1)}%
           </span>
         )}
       </div>
-      {sub && <div className="relative mt-1 text-[12.5px] text-white/40">{sub}</div>}
+      {sub && <div className="relative mt-1 text-[11.5px] leading-snug text-white/40 sm:text-[12.5px]">{sub}</div>}
       {children}
     </Card>
   );
@@ -136,9 +136,9 @@ export function Button({ children, variant = 'primary', className = '', ...rest 
 
 export function Segmented({ options, value, onChange, id }) {
   return (
-    <div className="flex rounded-xl border border-white/[0.07] bg-white/[0.02] p-1 text-[12.5px] font-medium">
+    <div className="no-scrollbar flex max-w-full overflow-x-auto rounded-xl border border-white/[0.07] bg-white/[0.02] p-1 text-[12.5px] font-medium">
       {options.map((o) => (
-        <button key={o} onClick={() => onChange(o)} className={`relative rounded-lg px-3 py-1.5 transition-colors ${value === o ? 'text-white' : 'text-white/45 hover:text-white/80'}`}>
+        <button key={o} onClick={() => onChange(o)} className={`relative shrink-0 whitespace-nowrap rounded-lg px-3 py-1.5 transition-colors ${value === o ? 'text-white' : 'text-white/45 hover:text-white/80'}`}>
           {value === o && <motion.span layoutId={`seg-${id}`} className="absolute inset-0 rounded-lg bg-white/[0.08]" transition={{ type: 'spring', stiffness: 420, damping: 34 }} />}
           <span className="relative">{o}</span>
         </button>

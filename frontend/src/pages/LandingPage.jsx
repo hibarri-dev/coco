@@ -8,6 +8,7 @@ import HeroDemo from '../components/landing/HeroDemo';
 import Features from '../components/landing/Features';
 import { Testimonials, Stats, Pricing, PartnerBand, FinalCta, Featured } from '../components/landing/Sections';
 import { EASE } from '../components/ui/motion';
+import { useTheme } from '../hooks/useTheme';
 
 const fadeUp = (delay) => ({
   initial: { opacity: 0, y: 18 },
@@ -16,10 +17,11 @@ const fadeUp = (delay) => ({
 });
 
 function Hero() {
+  const { light } = useTheme();
   return (
     <section className="px-2 sm:px-3 pt-2">
       <div className="relative overflow-hidden rounded-[20px] sm:rounded-[28px] border border-white/[0.06]">
-        <NightSky />
+        <NightSky light={light} />
         <div className="relative mx-auto max-w-[1180px] px-5 pt-20 sm:pt-28 pb-10 sm:pb-16 text-center">
           <motion.div {...fadeUp(0)}>
             <a
@@ -81,8 +83,9 @@ function Hero() {
 }
 
 export default function LandingPage() {
+  const { theme } = useTheme();
   return (
-    <div className="min-h-screen bg-[#0b0a10] text-white">
+    <div data-theme={theme} className="site-theme min-h-screen bg-[#0b0a10] text-white transition-colors duration-500">
       <Navbar />
       <main>
         <Hero />

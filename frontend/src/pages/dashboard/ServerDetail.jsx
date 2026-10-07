@@ -14,14 +14,14 @@ const fmtGb = (gb) => (gb >= 1024 ? `${(gb / 1024).toFixed(gb % 1024 ? 2 : 1)} T
 
 function KPI({ label, value, sub, icon: Icon, accent }) {
   return (
-    <Card className={`relative overflow-hidden p-5 ${accent ? 'border-coco-purple/30' : ''}`}>
+    <Card className={`relative min-w-0 overflow-hidden p-4 sm:p-5 ${accent ? 'border-coco-purple/30' : ''}`}>
       {accent && <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-coco-purple/25 blur-2xl" />}
-      <div className="relative flex items-center justify-between text-[12.5px] text-white/50">
-        {label}
-        <Icon size={15} className="text-white/30" />
+      <div className="relative flex items-center justify-between gap-2 text-[12px] text-white/50 sm:text-[12.5px]">
+        <span className="truncate">{label}</span>
+        <Icon size={15} className="shrink-0 text-white/30" />
       </div>
-      <div className="relative mt-2 text-[24px] font-bold tracking-tight tabular">{value}</div>
-      {sub && <div className="relative mt-0.5 text-[12px] text-white/40">{sub}</div>}
+      <div className="relative mt-2 whitespace-nowrap text-[20px] font-bold tracking-tight tabular sm:text-[24px]">{value}</div>
+      {sub && <div className="relative mt-0.5 text-[11.5px] leading-snug text-white/40 sm:text-[12px]">{sub}</div>}
     </Card>
   );
 }
@@ -84,7 +84,7 @@ export default function ServerDetail() {
       <div className="mt-4 mb-7 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-[30px] font-bold tracking-tight">Server #{s.id}</h1>
+            <h1 className="text-[26px] font-bold tracking-tight sm:text-[30px]">Server #{s.id}</h1>
             <Badge pulse={s.status === 'Online'}>{s.status}</Badge>
           </div>
           <div className="mt-2 flex flex-wrap items-center gap-x-5 gap-y-1 text-[13px] text-white/50">
@@ -108,7 +108,7 @@ export default function ServerDetail() {
 
       <Card className="mt-4">
         <CardHeader title="Utilization" sub="Live resource usage on this server" icon={Activity} />
-        <div className="grid grid-cols-2 gap-6 p-6 sm:grid-cols-3 lg:grid-cols-5">
+        <div className="grid grid-cols-2 gap-x-4 gap-y-6 p-4 sm:grid-cols-3 sm:gap-6 sm:p-6 lg:grid-cols-5">
           {[
             ['CPU utilization', s.cpuUtil, Cpu],
             ['RAM utilization', s.ramUtil, MemoryStick],
@@ -117,7 +117,7 @@ export default function ServerDetail() {
             ['GPU utilization', s.gpuUtil, Microchip],
           ].map(([label, v, Icon]) => (
             <div key={label} className="flex flex-col items-center gap-3 text-center">
-              <Ring value={v} size={110} stroke={9} color={v >= 90 ? '#fbbf24' : '#9e00ff'} sub={v === null ? 'No GPU' : undefined} />
+              <Ring value={v} size={100} stroke={9} color={v >= 90 ? '#fbbf24' : '#9e00ff'} sub={v === null ? 'No GPU' : undefined} />
               <span className="flex items-center gap-1.5 text-[12.5px] text-white/55"><Icon size={13} />{label}</span>
             </div>
           ))}

@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { Gauge, FileText, CircleCheck, Building, CreditCard, Download, Sparkles } from 'lucide-react';
 import { Card, CardHeader, PageHeader, Stat, Badge, Button, Table, page } from '../../components/dashboard/ui';
 import { Ring } from '../../components/dashboard/charts';
+import { MobileList } from '../../components/dashboard/tables';
 import { BILLING } from '../../data/dashboard';
 import { usd } from '../../data/packages';
 
@@ -68,6 +69,21 @@ export default function Billing() {
             action={due > 0 && <span className="rounded-full bg-amber-400/10 px-2.5 py-1 text-[12px] text-amber-300">{usd(due)} due</span>}
           />
           <div className="mt-3">
+            <MobileList>
+              {costs.map((c) => (
+                <li key={c.id} className="px-4 py-3.5">
+                  <div className="flex items-start justify-between gap-3">
+                    <span className="text-[13.5px] font-medium leading-snug">{c.item}</span>
+                    <span className="shrink-0 text-[14px] font-semibold tabular">{usd(c.amount)}</span>
+                  </div>
+                  <div className="mt-2 flex items-center justify-between gap-3 text-[11.5px] text-white/40">
+                    <span className="truncate font-mono">{c.id} · {c.date}</span>
+                    <Badge>{c.status}</Badge>
+                  </div>
+                </li>
+              ))}
+            </MobileList>
+            <div className="hidden md:block">
             <Table head={['Invoice', 'Date', 'Item', 'Status', '>Amount']}>
               {costs.map((c) => (
                 <tr key={c.id} className="transition-colors hover:bg-white/[0.025]">
@@ -79,6 +95,7 @@ export default function Billing() {
                 </tr>
               ))}
             </Table>
+            </div>
           </div>
         </Card>
 
@@ -88,7 +105,7 @@ export default function Billing() {
           <motion.div
             whileHover={{ rotateX: 6, rotateY: -8 }}
             style={{ transformPerspective: 800 }}
-            className="relative mt-5 aspect-[1.6] overflow-hidden rounded-2xl bg-gradient-to-br from-[#5b00a3] via-[#2a0a4a] to-black p-5 shadow-[0_20px_50px_-20px_rgba(158,0,255,0.7)]"
+            className="on-accent relative mt-5 aspect-[1.6] overflow-hidden rounded-2xl bg-gradient-to-br from-[#5b00a3] via-[#2a0a4a] to-black p-5 shadow-[0_20px_50px_-20px_rgba(158,0,255,0.7)]"
           >
             <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
             <div className="relative flex h-full flex-col justify-between">

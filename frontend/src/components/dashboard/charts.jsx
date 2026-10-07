@@ -52,7 +52,7 @@ export function AreaChart({ data, height = 220, format = (v) => v, labels }) {
           </linearGradient>
         </defs>
         {[0.25, 0.5, 0.75].map((f) => (
-          <line key={f} x1="0" x2={W} y1={pad.t + f * (H - pad.t - pad.b)} y2={pad.t + f * (H - pad.t - pad.b)} stroke="rgba(255,255,255,0.05)" vectorEffect="non-scaling-stroke" />
+          <line key={f} x1="0" x2={W} y1={pad.t + f * (H - pad.t - pad.b)} y2={pad.t + f * (H - pad.t - pad.b)} className="stroke-white/[0.06]" vectorEffect="non-scaling-stroke" />
         ))}
         <motion.path d={area} fill={`url(#${id}-fill)`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 1 }} />
         <motion.path
@@ -67,7 +67,7 @@ export function AreaChart({ data, height = 220, format = (v) => v, labels }) {
         />
         {hover !== null && (
           <g>
-            <line x1={pts[hover][0]} x2={pts[hover][0]} y1={pad.t} y2={H - pad.b} stroke="rgba(255,255,255,0.2)" strokeDasharray="3 3" vectorEffect="non-scaling-stroke" />
+            <line x1={pts[hover][0]} x2={pts[hover][0]} y1={pad.t} y2={H - pad.b} className="stroke-white/20" strokeDasharray="3 3" vectorEffect="non-scaling-stroke" />
           </g>
         )}
       </svg>
@@ -118,14 +118,14 @@ export function Bars({ data, height = 160, format = (v) => v, highlightLast = tr
   );
 }
 
-export function Ring({ value, size = 120, stroke = 10, label, sub, color = '#9e00ff', track = 'rgba(255,255,255,0.07)' }) {
+export function Ring({ value, size = 120, stroke = 10, label, sub, color = '#9e00ff' }) {
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
   const v = value ?? 0;
   return (
     <div className="relative grid place-items-center" style={{ width: size, height: size }}>
       <svg width={size} height={size} className="-rotate-90">
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={track} strokeWidth={stroke} />
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" className="stroke-white/[0.08]" strokeWidth={stroke} />
         {value !== null && (
           <motion.circle
             cx={size / 2}

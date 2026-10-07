@@ -157,7 +157,7 @@ export default function Terminal({ autoplay = 'coco up --gpu l40s', compact = fa
   return (
     <div className="flex h-full flex-col gap-3">
       <div
-        className="relative flex-1 min-h-0 cursor-text overflow-hidden rounded-xl border border-white/[0.08] bg-[#09080d] shadow-inner"
+        className="screen relative flex-1 min-h-0 cursor-text overflow-hidden rounded-xl border border-white/[0.08] bg-[#09080d] shadow-inner"
         onClick={() => inputRef.current?.focus({ preventScroll: true })}
       >
         <div className="flex items-center justify-between border-b border-white/[0.06] px-4 py-2 text-[11px] text-white/35">

@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { Landmark, CalendarClock, Wallet, ShieldCheck, Download, ArrowUpRight } from 'lucide-react';
 import { Card, CardHeader, PageHeader, Badge, Button, Table, page } from '../../components/dashboard/ui';
 import { Bars } from '../../components/dashboard/charts';
+import { MobileList } from '../../components/dashboard/tables';
 import { PAYOUTS, PORTFOLIO } from '../../data/dashboard';
 import { usd } from '../../data/packages';
 
@@ -20,12 +21,12 @@ export default function Payouts() {
       />
 
       <div className="grid gap-4 lg:grid-cols-3">
-        <Card className="relative overflow-hidden p-6 lg:col-span-2">
+        <Card className="relative overflow-hidden p-5 sm:p-6 lg:col-span-2">
           <div className="absolute -right-20 -top-24 h-72 w-72 rounded-full bg-coco-purple/25 blur-3xl" />
           <div className="relative flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <div className="flex items-center gap-2 text-[13px] text-white/55"><Wallet size={15} /> Pending Payout</div>
-              <div className="mt-2 text-5xl font-bold tracking-tight tabular">{usd(upcoming.amount)}</div>
+              <div className="mt-2 text-4xl font-bold tracking-tight tabular sm:text-5xl">{usd(upcoming.amount)}</div>
               <div className="mt-2 text-[13px] text-white/45">For {upcoming.period}</div>
             </div>
             <div className="rounded-2xl border border-white/10 bg-black/30 px-5 py-4 backdrop-blur">
@@ -85,6 +86,21 @@ export default function Payouts() {
         <Card className="lg:col-span-3">
           <CardHeader title="Payout history" sub="Deposited to your account" />
           <div className="mt-3">
+            <MobileList>
+              {history.map((p) => (
+                <li key={p.id} className="flex items-center justify-between gap-3 px-4 py-3.5">
+                  <div className="min-w-0">
+                    <div className="text-[14px] font-semibold">{p.period}</div>
+                    <div className="mt-0.5 text-[12px] text-white/45">Paid {p.date}</div>
+                  </div>
+                  <div className="flex shrink-0 flex-col items-end gap-1">
+                    <span className="text-[14px] font-semibold tabular">{usd(p.amount)}</span>
+                    <Badge>{p.status}</Badge>
+                  </div>
+                </li>
+              ))}
+            </MobileList>
+            <div className="hidden md:block">
             <Table head={['Payout', 'Period', 'Paid on', 'Status', '>Amount', '']}>
               {history.map((p) => (
                 <tr key={p.id} className="group transition-colors hover:bg-white/[0.025]">
@@ -97,6 +113,7 @@ export default function Payouts() {
                 </tr>
               ))}
             </Table>
+            </div>
           </div>
         </Card>
       </div>

@@ -5,6 +5,8 @@ import {
   LayoutDashboard, Server, Users, CreditCard, Wallet, Receipt, ShoppingCart, Bell, Search, Menu, X, LogOut, ChevronDown, Plus,
 } from 'lucide-react';
 import { Logo } from '../components/Logo';
+import ThemeToggle from '../components/ui/ThemeToggle';
+import { useTheme } from '../hooks/useTheme';
 import { PARTNER, PORTFOLIO } from '../data/dashboard';
 import { usd } from '../data/packages';
 import Portfolio from './dashboard/Portfolio';
@@ -77,7 +79,7 @@ function Sidebar({ onNavigate }) {
           <div className="relative mt-2 text-[12px] text-white/50">Next payout in <span className="font-semibold text-white">{PORTFOLIO.nextPayoutDays} days</span></div>
         </div>
         <div className="mt-3 flex items-center gap-3 rounded-xl px-2 py-2">
-          <span className="grid h-9 w-9 place-items-center rounded-full bg-gradient-to-br from-coco-violet to-[#2b0750] text-[12px] font-semibold">{PARTNER.initials}</span>
+          <span className="on-accent grid h-9 w-9 place-items-center rounded-full bg-gradient-to-br from-coco-violet to-[#2b0750] text-[12px] font-semibold">{PARTNER.initials}</span>
           <div className="min-w-0 flex-1">
             <div className="truncate text-[13px] font-semibold">{PARTNER.name}</div>
             <div className="truncate text-[11.5px] text-white/40">{PARTNER.company}</div>
@@ -95,18 +97,22 @@ function Topbar({ onMenu }) {
   const navigate = useNavigate();
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-white/[0.06] bg-[#08070c]/80 px-4 backdrop-blur-xl sm:px-6 lg:px-8">
-      <button onClick={onMenu} className="rounded-lg p-2 text-white/70 hover:bg-white/5 lg:hidden" aria-label="Open navigation">
+      <button onClick={onMenu} className="-ml-1.5 grid h-10 w-10 place-items-center rounded-lg text-white/70 hover:bg-white/5 lg:hidden" aria-label="Open navigation">
         <Menu size={20} />
       </button>
+      <Link to="/dashboard" className="text-white md:hidden" aria-label="Dashboard home">
+        <Logo tagline={false} className="h-[16px] w-auto" />
+      </Link>
       <label className="hidden max-w-sm flex-1 items-center gap-2.5 rounded-xl border border-white/[0.07] bg-white/[0.02] px-3.5 py-2 text-[13px] text-white/40 md:flex">
         <Search size={15} />
         <input placeholder="Search servers, customers, invoices…" className="flex-1 bg-transparent text-white outline-none placeholder:text-white/35" />
         <kbd className="rounded border border-white/10 px-1.5 text-[10px] text-white/40">⌘K</kbd>
       </label>
       <div className="ml-auto flex items-center gap-2">
-        <span className="hidden items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/[0.06] px-3 py-1.5 text-[12px] text-emerald-300 sm:flex">
+        <span className="hidden items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/[0.06] px-3 py-1.5 text-[12px] text-emerald-300 xl:flex">
           <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" /> All systems operational
         </span>
+        <ThemeToggle />
         <button className="relative rounded-xl border border-white/[0.07] p-2.5 text-white/60 hover:text-white" aria-label="Notifications">
           <Bell size={16} />
           <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-coco-violet ring-2 ring-[#08070c]" />
@@ -115,7 +121,7 @@ function Topbar({ onMenu }) {
           <Plus size={15} /> Buy server
         </button>
         <button className="flex items-center gap-2 rounded-xl px-1.5 py-1 hover:bg-white/5">
-          <span className="grid h-8 w-8 place-items-center rounded-full bg-gradient-to-br from-coco-violet to-[#2b0750] text-[11px] font-semibold">{PARTNER.initials}</span>
+          <span className="on-accent grid h-8 w-8 place-items-center rounded-full bg-gradient-to-br from-coco-violet to-[#2b0750] text-[11px] font-semibold">{PARTNER.initials}</span>
           <ChevronDown size={14} className="hidden text-white/40 sm:block" />
         </button>
       </div>
@@ -126,13 +132,25 @@ function Topbar({ onMenu }) {
 export default function Dashboard() {
   const location = useLocation();
   const [mobileNav, setMobileNav] = useState(false);
+  const { theme } = useTheme();
 
   useEffect(() => {
     document.title = 'Partner Dashboard · CoCo by Hibarri';
   }, []);
 
+  useEffect(() => {
+    if (!mobileNav) return;
+    document.body.style.overflow = 'hidden';
+    const onKey = (e) => e.key === 'Escape' && setMobileNav(false);
+    window.addEventListener('keydown', onKey);
+    return () => {
+      document.body.style.overflow = '';
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [mobileNav]);
+
   return (
-    <div className="min-h-screen bg-[#08070c] text-white">
+    <div data-theme={theme} className="dash-theme min-h-screen bg-[#08070c] text-white transition-colors duration-300">
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-[264px] border-r border-white/[0.06] bg-[#0a090e] lg:block">
         <Sidebar />
       </aside>
@@ -149,7 +167,7 @@ export default function Dashboard() {
               onClick={() => setMobileNav(false)}
             />
             <motion.aside
-              className="fixed inset-y-0 left-0 z-50 w-[280px] border-r border-white/[0.06] bg-[#0a090e] lg:hidden"
+              className="fixed inset-y-0 left-0 z-50 w-[min(288px,86vw)] overflow-y-auto border-r border-white/[0.06] bg-[#0a090e] lg:hidden"
               initial={{ x: -300 }}
               animate={{ x: 0 }}
               exit={{ x: -300 }}
@@ -166,7 +184,7 @@ export default function Dashboard() {
 
       <div className="lg:pl-[264px]">
         <Topbar onMenu={() => setMobileNav(true)} />
-        <main className="mx-auto max-w-[1400px] px-4 py-7 sm:px-6 lg:px-8">
+        <main className="mx-auto max-w-[1400px] px-3.5 py-6 sm:px-6 sm:py-7 lg:px-8">
           <AnimatePresence mode="wait">
             <Routes location={location} key={location.pathname}>
               <Route index element={<Portfolio />} />

@@ -173,7 +173,7 @@ export function PartnerBand() {
   return (
     <section id="partners" className="relative mx-auto max-w-[1240px] px-5 lg:px-8 pb-24 sm:pb-32">
       <Reveal>
-        <div className="relative overflow-hidden rounded-[28px] border border-coco-purple/30 bg-[#0d0716] p-8 sm:p-14">
+        <div className="screen relative overflow-hidden rounded-[28px] border border-coco-purple/30 bg-[#0d0716] p-8 sm:p-14">
           <div className="absolute inset-0 bg-[radial-gradient(800px_circle_at_100%_0%,rgba(158,0,255,0.35),transparent_55%)]" />
           <div className="absolute inset-0 bg-grain opacity-[0.07] mix-blend-overlay" />
           <div className="relative grid gap-10 lg:grid-cols-[1.2fr_1fr] lg:items-center">

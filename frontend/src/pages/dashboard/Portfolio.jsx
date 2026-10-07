@@ -47,11 +47,11 @@ export default function Portfolio() {
             sub="Revenue earned from compute sold on your servers"
             action={<Segmented id="range" options={['7 days', '30 days', '6 months']} value={range} onChange={setRange} />}
           />
-          <div className="grid gap-6 px-5 pt-5 sm:grid-cols-2">
+          <div className="grid grid-cols-2 gap-4 px-4 pt-5 sm:gap-6 sm:px-5">
             <div>
               <div className="text-[12.5px] text-white/50">This Month's Revenue</div>
-              <div className="mt-1 flex items-baseline gap-2.5">
-                <span className="text-4xl font-bold tracking-tight">
+              <div className="mt-1 flex flex-wrap items-baseline gap-x-2.5">
+                <span className="text-[26px] font-bold tracking-tight sm:text-4xl">
                   <Counter value={p.thisMonthRevenue} format={(n) => usd(n)} />
                 </span>
                 <span className={`text-[13px] font-semibold ${change >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
@@ -60,9 +60,9 @@ export default function Portfolio() {
               </div>
               <div className="mt-0.5 text-[12px] text-white/35">Month to date · 6 days remaining</div>
             </div>
-            <div className="sm:border-l sm:border-white/[0.06] sm:pl-6">
+            <div className="border-l border-white/[0.06] pl-4 sm:pl-6">
               <div className="text-[12.5px] text-white/50">Last Month's Revenue</div>
-              <div className="mt-1 text-4xl font-bold tracking-tight text-white/80">
+              <div className="mt-1 text-[26px] font-bold tracking-tight text-white/80 sm:text-4xl">
                 <Counter value={p.lastMonthRevenue} format={(n) => usd(n)} />
               </div>
               <div className="mt-0.5 text-[12px] text-white/35">September 2026 · paid out</div>
