@@ -41,11 +41,11 @@ function Hero() {
           </motion.h1>
 
           <motion.p {...fadeUp(0.16)} className="mx-auto mt-6 max-w-2xl text-[17px] sm:text-xl leading-relaxed text-white/60">
-            The intelligent{' '}
+            High speed cloud computing, and the world's fastest growing {' '}
             <a href="#features" className="text-white underline decoration-coco-violet/70 decoration-2 underline-offset-[6px] hover:decoration-coco-violet">
-              NeoCloud
+              AI NeoCloud
             </a>{' '}
-            for developers. Deploy on CPUs, GPUs and bare metal across a global network of partner-owned servers.
+            for developers needing vCPUs, vGPUs and bare metal servers.
           </motion.p>
 
           <motion.div {...fadeUp(0.24)} className="mt-10 flex flex-wrap items-center justify-center gap-3">
