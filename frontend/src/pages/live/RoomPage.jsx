@@ -65,30 +65,27 @@ export default function RoomPage() {
         )}
       </section>
 
-      {revealed ? <RevealedSections /> : <div className="pb-16" />}
+      <RealEstateVsServers showCta={revealed} />
+      {/* <Companies /> */}
+      <FunnelFaq />
+      <Testimonials />
+      {revealed ? <FinalCta /> : <div className="pb-16" />}
     </FunnelLayout>
   );
 }
 
-function RevealedSections() {
+function FinalCta() {
   return (
-    <>
-      <RealEstateVsServers />
-      <Companies />
-      <FunnelFaq />
-      <Testimonials />
-
-      <section className="px-3 pb-3">
-        <div className="relative overflow-hidden rounded-[28px] px-6 py-20 text-center text-white sm:py-28">
-          <div className="absolute inset-0 animate-gradient bg-[linear-gradient(120deg,#3b0a6b,#6d12c9_40%,#9e00ff_70%,#4b1590)] bg-[length:200%_200%]" />
-          <div className="absolute inset-0 bg-grain opacity-[0.12] mix-blend-overlay" />
-          <div className="relative mx-auto max-w-2xl">
-            <h2 className="text-4xl font-bold leading-[1.05] tracking-tight sm:text-6xl">Your digital estate starts here</h2>
-            <p className="mt-5 text-lg text-white/75">Pick a data center, choose your servers and see your projected earnings before you pay.</p>
-            <InvestCta className="mt-9 !bg-white !text-black hover:!bg-white/90" />
-          </div>
+    <section className="px-3 pb-3">
+      <div className="relative overflow-hidden rounded-[28px] px-6 py-20 text-center text-white sm:py-28">
+        <div className="absolute inset-0 animate-gradient bg-[linear-gradient(120deg,#3b0a6b,#6d12c9_40%,#9e00ff_70%,#4b1590)] bg-[length:200%_200%]" />
+        <div className="absolute inset-0 bg-grain opacity-[0.12] mix-blend-overlay" />
+        <div className="relative mx-auto max-w-2xl">
+          <h2 className="text-4xl font-bold leading-[1.05] tracking-tight sm:text-6xl">Your digital estate starts here</h2>
+          <p className="mt-5 text-lg text-white/75">Pick a data center, choose your servers and see your projected earnings before you pay.</p>
+          <InvestCta className="mt-9 !bg-white !text-black hover:!bg-white/90" />
         </div>
-      </section>
-    </>
+      </div>
+    </section>
   );
 }

@@ -26,3 +26,10 @@ export const BANK = {
 };
 
 export const COMPANIES = [];
+
+// Drop official logo files into /public/press/ and set `logo`; the styled wordmark shows until then.
+export const PRESS = [
+  { name: 'Forbes', logo: '', wordmark: 'font-serif text-[1.35em] font-bold tracking-tight' },
+  { name: 'Engineering News', logo: '', wordmark: 'font-sans text-[0.95em] font-extrabold uppercase tracking-tight' },
+  { name: 'Mail & Guardian', logo: '', wordmark: 'font-serif text-[1.1em] font-bold italic' },
+];
