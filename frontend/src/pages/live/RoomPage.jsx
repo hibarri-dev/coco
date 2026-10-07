@@ -12,7 +12,7 @@ export default function RoomPage() {
 
   return (
     <FunnelLayout step="broadcast" title={BROADCAST.title}>
-      <section className="mx-auto max-w-[1100px] px-4 pt-8 sm:px-6 sm:pt-12">
+      <section className="mx-auto max-w-[1240px] px-4 pt-8 sm:px-6 sm:pt-12">
         <div className="mb-5 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <div className="text-[12.5px] font-semibold text-coco-violet">Scheduled broadcast · daily at {formatClock(schedule.start)} {timeZoneLabel(schedule.start)}</div>

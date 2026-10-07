@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { CalendarPlus, Maximize, Pause, Play, RotateCcw, Volume2, VolumeX, Radio, Clapperboard } from 'lucide-react';
+import { CalendarPlus, Maximize, Pause, Play, RotateCcw, Volume2, VolumeX, Radio, Clapperboard, Eye } from 'lucide-react';
 import Countdown from './Countdown';
+import BroadcastChat from './BroadcastChat';
 import { BROADCAST } from '../../config/funnel';
 import { calendarFile, dayLabel, formatClock, getRegistration, getSchedule, markCompleted, timeZoneLabel, useNow } from '../../lib/broadcast';
+import { useAudience } from '../../lib/chat';
 
 const fmt = (s) => {
   const t = Math.max(0, Math.floor(s));
@@ -94,7 +96,16 @@ function Recap() {
   );
 }
 
-function Broadcast({ session, duration, onDuration, onEnded }) {
+function Viewers({ count }) {
+  return (
+    <span className="flex items-center gap-1.5 rounded-md bg-black/55 px-2 py-1 text-[11.5px] font-semibold text-white backdrop-blur">
+      <Eye size={13} />
+      <span className="tabular">{count.toLocaleString('en-US')}</span>
+    </span>
+  );
+}
+
+function Broadcast({ session, duration, viewers, lead, onDuration, onEnded }) {
   const videoRef = useRef(null);
   const wrapRef = useRef(null);
   const [current, setCurrent] = useState(0);
@@ -157,108 +168,118 @@ function Broadcast({ session, duration, onDuration, onEnded }) {
   const behind = hasVideo && edge - current > 6;
 
   return (
-    <div ref={wrapRef} tabIndex={0} onKeyDown={onKey} className="group/player outline-none">
-      <Frame>
-        {hasVideo ? (
-          <video
-            ref={videoRef}
-            src={BROADCAST.videoUrl}
-            poster={BROADCAST.posterUrl || undefined}
-            playsInline
-            disablePictureInPicture
-            controlsList="nodownload noplaybackrate noremoteplayback"
-            onContextMenu={(e) => e.preventDefault()}
-            onLoadedMetadata={(e) => onDuration(e.currentTarget.duration)}
-            onTimeUpdate={(e) => {
-              clamp();
-              setCurrent(e.currentTarget.currentTime);
-            }}
-            onSeeking={clamp}
-            onRateChange={(e) => {
-              if (e.currentTarget.playbackRate !== 1) e.currentTarget.playbackRate = 1;
-            }}
-            onPlay={() => setPlaying(true)}
-            onPause={() => setPlaying(false)}
-            onEnded={onEnded}
-            onClick={toggle}
-            muted={muted}
-            className="h-full w-full cursor-pointer bg-black object-contain"
-          />
-        ) : (
-          <div className="grid h-full place-items-center bg-[radial-gradient(70%_70%_at_50%_30%,rgba(158,0,255,0.25),transparent_70%)] px-6 text-center">
-            <div>
-              <Radio size={28} className="mx-auto text-coco-lilac" />
-              <div className="mt-3 text-lg font-semibold">Broadcast in progress</div>
-              <p className="mt-1 text-[13px] text-white/55">
-                {import.meta.env.DEV ? 'Set VITE_BROADCAST_VIDEO_URL to stream the recording here.' : 'The broadcast will appear here shortly.'}
-              </p>
+    <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
+      <div ref={wrapRef} tabIndex={0} onKeyDown={onKey} className="group/player min-w-0 outline-none">
+        <Frame>
+          {hasVideo ? (
+            <video
+              ref={videoRef}
+              src={BROADCAST.videoUrl}
+              poster={BROADCAST.posterUrl || undefined}
+              playsInline
+              disablePictureInPicture
+              controlsList="nodownload noplaybackrate noremoteplayback"
+              onContextMenu={(e) => e.preventDefault()}
+              onLoadedMetadata={(e) => onDuration(e.currentTarget.duration)}
+              onTimeUpdate={(e) => {
+                clamp();
+                setCurrent(e.currentTarget.currentTime);
+              }}
+              onSeeking={clamp}
+              onRateChange={(e) => {
+                if (e.currentTarget.playbackRate !== 1) e.currentTarget.playbackRate = 1;
+              }}
+              onPlay={() => setPlaying(true)}
+              onPause={() => setPlaying(false)}
+              onEnded={onEnded}
+              onClick={toggle}
+              muted={muted}
+              className="h-full w-full cursor-pointer bg-black object-contain"
+            />
+          ) : (
+            <div className="grid h-full place-items-center bg-[radial-gradient(70%_70%_at_50%_30%,rgba(158,0,255,0.25),transparent_70%)] px-6 text-center">
+              <div>
+                <Radio size={28} className="mx-auto text-coco-lilac" />
+                <div className="mt-3 text-lg font-semibold">Broadcast in progress</div>
+                <p className="mt-1 text-[13px] text-white/55">
+                  {import.meta.env.DEV ? 'Set VITE_BROADCAST_VIDEO_URL to stream the recording here.' : 'The broadcast will appear here shortly.'}
+                </p>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        <div className="absolute left-3 top-3 flex items-center gap-2">
-          <span className="flex items-center gap-1.5 rounded-md bg-coco-purple px-2 py-1 text-[11px] font-bold uppercase tracking-wider">
-            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" /> Premiere
-          </span>
-          <span className="rounded-md bg-black/50 px-2 py-1 text-[11px] text-white/80 backdrop-blur">Scheduled broadcast</span>
-        </div>
-
-        {hasVideo && !playing && (
-          <button onClick={toggle} className="absolute inset-0 grid place-items-center bg-black/30" aria-label="Play">
-            <span className="grid h-16 w-16 place-items-center rounded-full bg-white/90 text-black shadow-xl">
-              <Play size={26} fill="currentColor" className="ml-1" />
+          <div className="absolute left-3 top-3 flex items-center gap-2">
+            <span className="flex items-center gap-1.5 rounded-md bg-coco-purple px-2 py-1 text-[11px] font-bold uppercase tracking-wider">
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" /> Premiere
             </span>
-          </button>
-        )}
-
-        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 to-transparent px-3 pb-2.5 pt-10 sm:px-4">
-          <div
-            className="relative h-1.5 cursor-pointer rounded-full bg-white/20"
-            onClick={(e) => {
-              const r = e.currentTarget.getBoundingClientRect();
-              seekTo(((e.clientX - r.left) / r.width) * duration);
-            }}
-            role="slider"
-            aria-label="Broadcast position"
-            aria-valuemin={0}
-            aria-valuemax={Math.round(duration)}
-            aria-valuenow={Math.round(position)}
-          >
-            <div className="absolute inset-y-0 left-0 rounded-full bg-white/30" style={{ width: `${(edge / duration) * 100}%` }} />
-            <div className="absolute inset-y-0 left-0 rounded-full bg-coco-purple" style={{ width: `${(position / duration) * 100}%` }} />
+            <span className="hidden rounded-md bg-black/50 px-2 py-1 text-[11px] text-white/80 backdrop-blur sm:inline">Scheduled broadcast</span>
           </div>
-          <div className="mt-2 flex items-center gap-1 text-[12px] sm:gap-2">
-            {hasVideo && (
-              <>
-                <button onClick={toggle} className="grid h-8 w-8 place-items-center rounded-lg hover:bg-white/10" aria-label={playing ? 'Pause' : 'Play'}>
-                  {playing ? <Pause size={16} fill="currentColor" /> : <Play size={16} fill="currentColor" />}
-                </button>
-                <button onClick={() => seekTo(current - 10)} className="grid h-8 w-8 place-items-center rounded-lg hover:bg-white/10" aria-label="Back 10 seconds">
-                  <RotateCcw size={16} />
-                </button>
-                <button onClick={() => setMuted((m) => !m)} className="grid h-8 w-8 place-items-center rounded-lg hover:bg-white/10" aria-label={muted ? 'Unmute' : 'Mute'}>
-                  {muted ? <VolumeX size={16} /> : <Volume2 size={16} />}
-                </button>
-              </>
-            )}
-            <span className="tabular text-white/75">
-              {fmt(position)} / {fmt(duration)}
-            </span>
-            <div className="ml-auto flex items-center gap-1">
-              {behind && (
-                <button onClick={() => seekTo(liveEdge())} className="rounded-lg bg-white/10 px-2.5 py-1 text-[11.5px] font-semibold hover:bg-white/20">
-                  Back to broadcast
-                </button>
-              )}
+          <div className="absolute right-3 top-3">
+            <Viewers count={viewers} />
+          </div>
+
+          {hasVideo && !playing && (
+            <button onClick={toggle} className="absolute inset-0 grid place-items-center bg-black/30" aria-label="Play">
+              <span className="grid h-16 w-16 place-items-center rounded-full bg-white/90 text-black shadow-xl">
+                <Play size={26} fill="currentColor" className="ml-1" />
+              </span>
+            </button>
+          )}
+
+          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 to-transparent px-3 pb-2.5 pt-10 sm:px-4">
+            <div
+              className="relative h-1.5 cursor-pointer rounded-full bg-white/20"
+              onClick={(e) => {
+                const r = e.currentTarget.getBoundingClientRect();
+                seekTo(((e.clientX - r.left) / r.width) * duration);
+              }}
+              role="slider"
+              aria-label="Broadcast position"
+              aria-valuemin={0}
+              aria-valuemax={Math.round(duration)}
+              aria-valuenow={Math.round(position)}
+            >
+              <div className="absolute inset-y-0 left-0 rounded-full bg-white/30" style={{ width: `${(edge / duration) * 100}%` }} />
+              <div className="absolute inset-y-0 left-0 rounded-full bg-coco-purple" style={{ width: `${(position / duration) * 100}%` }} />
+            </div>
+            <div className="mt-2 flex items-center gap-1 text-[12px] sm:gap-2">
               {hasVideo && (
-                <button onClick={() => wrapRef.current?.requestFullscreen?.()} className="grid h-8 w-8 place-items-center rounded-lg hover:bg-white/10" aria-label="Full screen">
-                  <Maximize size={15} />
-                </button>
+                <>
+                  <button onClick={toggle} className="grid h-8 w-8 place-items-center rounded-lg hover:bg-white/10" aria-label={playing ? 'Pause' : 'Play'}>
+                    {playing ? <Pause size={16} fill="currentColor" /> : <Play size={16} fill="currentColor" />}
+                  </button>
+                  <button onClick={() => seekTo(current - 10)} className="grid h-8 w-8 place-items-center rounded-lg hover:bg-white/10" aria-label="Back 10 seconds">
+                    <RotateCcw size={16} />
+                  </button>
+                  <button onClick={() => setMuted((m) => !m)} className="grid h-8 w-8 place-items-center rounded-lg hover:bg-white/10" aria-label={muted ? 'Unmute' : 'Mute'}>
+                    {muted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+                  </button>
+                </>
               )}
+              <span className="tabular text-white/75">
+                {fmt(position)} / {fmt(duration)}
+              </span>
+              <div className="ml-auto flex items-center gap-1">
+                {behind && (
+                  <button onClick={() => seekTo(liveEdge())} className="rounded-lg bg-white/10 px-2.5 py-1 text-[11.5px] font-semibold hover:bg-white/20">
+                    Back to broadcast
+                  </button>
+                )}
+                {hasVideo && (
+                  <button onClick={() => wrapRef.current?.requestFullscreen?.()} className="grid h-8 w-8 place-items-center rounded-lg hover:bg-white/10" aria-label="Full screen">
+                    <Maximize size={15} />
+                  </button>
+                )}
+              </div>
             </div>
           </div>
+        </Frame>
+      </div>
+      <div className="relative h-[420px] lg:h-auto">
+        <div className="h-full lg:absolute lg:inset-0">
+          <BroadcastChat session={session} duration={duration} viewers={viewers} lead={lead} />
         </div>
-      </Frame>
+      </div>
     </div>
   );
 }
@@ -275,6 +296,7 @@ export default function LivePlayer({ registration }) {
     return Boolean(joined && Date.now() > Date.parse(joined.start) + BROADCAST.durationSec * 1000);
   });
   const [recap, setRecap] = useState(false);
+  const viewers = useAudience(session?.id ?? schedule.id);
 
   useEffect(() => {
     if (completed && !registration?.completedAt) markCompleted(registration?.joinedSession?.id ?? null);
@@ -294,7 +316,18 @@ export default function LivePlayer({ registration }) {
   let view;
   if (recap) view = <Recap key="recap" />;
   else if (completed) view = <EndScreen key="end" onRecap={() => setRecap(true)} />;
-  else if (session) view = <Broadcast key="broadcast" session={session} duration={duration} onDuration={setMediaDuration} onEnded={finish} />;
+  else if (session)
+    view = (
+      <Broadcast
+        key="broadcast"
+        session={session}
+        duration={duration}
+        viewers={viewers}
+        lead={registration?.lead}
+        onDuration={setMediaDuration}
+        onEnded={finish}
+      />
+    );
   else if (schedule.status === 'live')
     view = (
       <Frame key="join">
@@ -304,7 +337,9 @@ export default function LivePlayer({ registration }) {
             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" /> Premiere
           </span>
           <h3 className="mt-3 text-xl font-bold sm:text-2xl">The broadcast has started</h3>
-          <p className="mt-1 text-[13.5px] text-white/60">Started at {formatClock(schedule.start)} · {Math.floor(schedule.position / 60)} min in</p>
+          <p className="mt-1 text-[13.5px] text-white/60">
+            Started at {formatClock(schedule.start)} · {Math.floor(schedule.position / 60)} min in · {viewers.toLocaleString('en-US')} watching
+          </p>
           <button onClick={join} className="mt-5 inline-flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-[14px] font-semibold text-black hover:bg-white/90">
             <Play size={16} fill="currentColor" /> Join the broadcast
           </button>
