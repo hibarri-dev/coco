@@ -1,13 +1,13 @@
-import { useCallback, useState } from 'react';
+import { useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, useScroll, useSpring } from 'framer-motion';
-import { ArrowDownRight, Sparkles } from 'lucide-react';
+import { ArrowDownRight, ArrowRight, Sparkles } from 'lucide-react';
 import { useTheme } from '../hooks/useTheme';
 import { Logo } from '../components/Logo';
 import Navbar from '../components/site/Navbar';
 import PartnerDemo from '../components/investors/PartnerDemo';
-import { Manifesto, Bento, HowItWorks, Packages, Calculator, Faq, InvestorCta } from '../components/investors/Sections';
-import CheckoutModal from '../components/CheckoutModal';
+import { Manifesto, Bento, HowItWorks, Faq, InvestorCta } from '../components/investors/Sections';
+import ServerPackages from '../components/funnel/ServerPackages';
 import { EASE } from '../components/ui/motion';
 
 const rise = (delay) => ({
@@ -26,8 +26,17 @@ function Hero({ light, onBuy }) {
         <div className="absolute inset-0 bg-grain opacity-[0.18] mix-blend-overlay" />
 
         <div className="relative mx-auto max-w-[1100px] px-5 pt-20 sm:pt-28 pb-16 sm:pb-24 text-center text-white">
-          <motion.div {...rise(0)} className="inline-flex items-center gap-2 rounded-full bg-black/35 px-4 py-1.5 text-[13px] text-white/80 backdrop-blur">
-            Cloud Partner Program <Sparkles size={14} className="text-[#d9a6ff]" />
+          <motion.div {...rise(0)}>
+            <Link
+              to="/live"
+              className="group inline-flex items-center gap-2 rounded-full bg-black/35 py-1.5 pl-1.5 pr-4 text-[13px] text-white/80 backdrop-blur transition hover:bg-black/50 hover:text-white"
+            >
+              <span className="flex items-center gap-1 rounded-full bg-white/15 px-2.5 py-0.5 text-[12px] font-semibold text-white">
+                <Sparkles size={12} className="text-[#d9a6ff]" /> Free broadcast
+              </span>
+              Real Estate vs Digital Estate, daily at 7pm
+              <ArrowRight size={14} className="transition-transform group-hover:translate-x-0.5" />
+            </Link>
           </motion.div>
           <motion.h1 {...rise(0.08)} className="mx-auto mt-7 max-w-4xl text-[46px] sm:text-7xl lg:text-[86px] font-bold leading-[0.98] tracking-[-0.035em]">
             Cloud investing,
@@ -81,12 +90,10 @@ function InvestorFooter() {
 
 export default function InvestorsPage() {
   const { theme, light } = useTheme();
-  const [buying, setBuying] = useState(null);
   const { scrollYProgress } = useScroll();
   const progress = useSpring(scrollYProgress, { stiffness: 140, damping: 30, mass: 0.3 });
 
-  const onBuy = useCallback((pkg, quantity = 1) => setBuying({ pkg, quantity }), []);
-  const close = useCallback(() => setBuying(null), []);
+  const onBuy = useCallback(() => document.getElementById('packages')?.scrollIntoView({ behavior: 'smooth' }), []);
 
   return (
     <div data-theme={theme} className="inv-theme min-h-screen bg-[var(--page)] text-[var(--ink)] transition-colors duration-500">
@@ -97,14 +104,11 @@ export default function InvestorsPage() {
         <Manifesto />
         <Bento />
         <HowItWorks />
-        <Packages onBuy={onBuy} />
-        <Calculator onBuy={onBuy} />
+        <ServerPackages className="pb-28 sm:pb-36" />
         <Faq />
         <InvestorCta />
       </main>
       <InvestorFooter />
-
-      <CheckoutModal pkg={buying?.pkg} quantity={buying?.quantity} onClose={close} />
     </div>
   );
 }
