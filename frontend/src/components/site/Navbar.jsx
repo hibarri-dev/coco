@@ -1,10 +1,13 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronDown, Menu, X, ArrowRight } from 'lucide-react';
 import { Logo } from '../Logo';
 import { PlatformArt, DocsArt, EnterpriseArt } from './MenuArt';
 import { EASE } from '../ui/motion';
+import ThemeToggle from '../ui/ThemeToggle';
+import { useTheme } from '../../hooks/useTheme';
 
 const MENUS = [
   {
@@ -71,7 +74,7 @@ function MenuPanel({ menu }) {
         </div>
         <p className="mt-1 text-sm text-white/50 leading-snug">{feature.desc}</p>
         {Art && (
-          <div className="mt-auto h-32 pt-4 opacity-90 group-hover:opacity-100 transition-opacity">
+          <div className="menu-art screen mt-auto h-32 pt-4 opacity-90 group-hover:opacity-100 transition-opacity">
             <Art />
           </div>
         )}
@@ -113,7 +116,8 @@ function NavLink({ href, className, children, onClick }) {
   );
 }
 
-export default function Navbar() {
+export default function Navbar({ themeToggle = true }) {
+  const { theme } = useTheme();
   const [open, setOpen] = useState(null);
   const [prevIndex, setPrevIndex] = useState(0);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -167,14 +171,26 @@ export default function Navbar() {
   }, []);
 
   useEffect(() => {
-    document.body.style.overflow = mobileOpen ? 'hidden' : '';
+    if (!mobileOpen) return;
+    document.body.style.overflow = 'hidden';
+    const onKey = (e) => e.key === 'Escape' && setMobileOpen(false);
+    const mq = window.matchMedia('(min-width: 1024px)');
+    const onWide = (e) => e.matches && setMobileOpen(false);
+    window.addEventListener('keydown', onKey);
+    mq.addEventListener('change', onWide);
+    return () => {
+      document.body.style.overflow = '';
+      window.removeEventListener('keydown', onKey);
+      mq.removeEventListener('change', onWide);
+    };
   }, [mobileOpen]);
 
   const activeMenu = MENUS[activeIndex];
 
   return (
     <header
-      className={`sticky top-0 z-50 transition-colors duration-300 ${
+      data-theme={theme}
+      className={`site-theme sticky top-0 z-50 text-white transition-colors duration-300 ${
         scrolled ? 'bg-[#0b0a10]/85 backdrop-blur-xl border-b border-white/[0.06]' : 'bg-[#0b0a10] border-b border-transparent'
       }`}
     >
@@ -247,6 +263,7 @@ export default function Navbar() {
         </nav>
 
         <div className="hidden lg:flex items-center gap-2 shrink-0">
+          {themeToggle && <ThemeToggle />}
           <Link to="/dashboard" className="rounded-lg px-3 py-2 text-[14px] font-medium text-white/80 hover:text-white transition-colors">
             Sign in
           </Link>
@@ -258,36 +275,73 @@ export default function Navbar() {
           </a>
         </div>
 
-        <button className="lg:hidden rounded-lg p-2 text-white/80 hover:bg-white/10" onClick={() => setMobileOpen(true)} aria-label="Open menu">
-          <Menu size={22} />
-        </button>
+        <div className="flex items-center gap-1.5 lg:hidden">
+          {themeToggle && <ThemeToggle />}
+          <Link to="/dashboard" className="hidden sm:inline-flex rounded-lg px-3 py-2 text-[14px] font-medium text-white/80 hover:text-white">
+            Sign in
+          </Link>
+          <a href="/#cta" className="hidden sm:inline-flex rounded-lg bg-coco-purple px-3.5 py-2 text-[14px] font-semibold text-white hover:bg-[#ad1fff] transition-colors">
+            Book a demo
+          </a>
+          <button
+            className="grid h-10 w-10 place-items-center rounded-lg text-white/80 hover:bg-white/10"
+            onClick={() => setMobileOpen(true)}
+            aria-label="Open menu"
+            aria-expanded={mobileOpen}
+          >
+            <Menu size={22} />
+          </button>
+        </div>
       </div>
 
-      <AnimatePresence>{mobileOpen && <MobileMenu onClose={() => setMobileOpen(false)} />}</AnimatePresence>
+      {createPortal(<AnimatePresence>{mobileOpen && <MobileMenu onClose={() => setMobileOpen(false)} />}</AnimatePresence>, document.body)}
     </header>
   );
 }
 
 function MobileMenu({ onClose }) {
   const [expanded, setExpanded] = useState(null);
+  const { theme } = useTheme();
   return (
     <motion.div
-      className="fixed inset-0 z-[60] bg-[#08070c] lg:hidden flex flex-col"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
+      data-theme={theme}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Menu"
+      className="site-theme fixed inset-0 z-[80] flex h-[100dvh] flex-col bg-[#08070c] text-white lg:hidden"
+      initial={{ opacity: 0, y: -12 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -12, transition: { duration: 0.18 } }}
+      transition={{ duration: 0.28, ease: EASE }}
     >
-      <div className="flex h-16 items-center justify-between px-5 border-b border-white/[0.06]">
-        <Link to="/" onClick={onClose} className="text-white">
+      <div className="flex h-16 shrink-0 items-center justify-between border-b border-white/[0.06] px-5">
+        <Link to="/" onClick={onClose} className="text-white" aria-label="CoCo home">
           <Logo tagline={false} className="h-[22px] w-auto" />
         </Link>
-        <button onClick={onClose} className="rounded-lg p-2 text-white/80 hover:bg-white/10" aria-label="Close menu">
+        <button onClick={onClose} className="grid h-10 w-10 place-items-center rounded-lg text-white/80 hover:bg-white/10" aria-label="Close menu">
           <X size={22} />
         </button>
       </div>
-      <div className="flex-1 overflow-y-auto px-5 py-4">
-        {MENUS.map((menu) => (
-          <div key={menu.key} className="border-b border-white/[0.06]">
+      <div className="flex-1 overflow-y-auto overscroll-contain px-5 py-3">
+        <Link
+          to="/investors"
+          onClick={onClose}
+          className="mb-2 flex items-center justify-between rounded-2xl border border-coco-purple/30 bg-coco-purple/10 px-4 py-3.5"
+        >
+          <span>
+            <span className="block text-[15px] font-semibold">Cloud Partners</span>
+            <span className="block text-[13px] text-white/55">Own servers and earn from every vCPU sold</span>
+          </span>
+          <ArrowRight size={18} className="text-coco-lilac" />
+        </Link>
+        {MENUS.map((menu, i) => (
+          <motion.div
+            key={menu.key}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.05 + i * 0.04, duration: 0.3, ease: EASE }}
+            className="border-b border-white/[0.06]"
+          >
             <button
               className="flex w-full items-center justify-between py-4 text-lg font-medium"
               onClick={() => setExpanded(expanded === menu.key ? null : menu.key)}
@@ -310,13 +364,13 @@ function MobileMenu({ onClose }) {
                 </motion.div>
               )}
             </AnimatePresence>
-          </div>
+          </motion.div>
         ))}
         <a href="/#pricing" onClick={onClose} className="block py-4 text-lg font-medium border-b border-white/[0.06]">
           Pricing
         </a>
       </div>
-      <div className="p-5 grid grid-cols-2 gap-3 border-t border-white/[0.06]">
+      <div className="grid shrink-0 grid-cols-2 gap-3 border-t border-white/[0.06] p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
         <Link to="/dashboard" onClick={onClose} className="rounded-xl border border-white/10 py-3 text-center font-medium">
           Sign in
         </Link>

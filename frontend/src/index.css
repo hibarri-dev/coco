@@ -185,6 +185,96 @@
   color-scheme: light;
 }
 
+/* Day mode for the home page (.site-theme) and dashboard (.dash-theme).
+   Tailwind's white/black utilities resolve through these variables, so
+   flipping them inverts the UI; hard-coded dark surfaces are remapped below. */
+:root {
+  --dark-emerald-200: var(--color-emerald-200);
+  --dark-emerald-300: var(--color-emerald-300);
+  --dark-emerald-400: var(--color-emerald-400);
+  --dark-amber-300: var(--color-amber-300);
+  --dark-amber-400: var(--color-amber-400);
+  --dark-rose-300: var(--color-rose-300);
+  --dark-rose-400: var(--color-rose-400);
+  --dark-sky-300: var(--color-sky-300);
+  --dark-sky-400: var(--color-sky-400);
+}
+.dash-theme,
+.site-theme {
+  color-scheme: dark;
+}
+:is(.dash-theme, .site-theme)[data-theme='light'] {
+  color-scheme: light;
+  --color-white: #0d0c12;
+  --color-black: #ffffff;
+  --color-coco-lilac: #8200d9;
+  --color-emerald-200: #065f46;
+  --color-emerald-300: #047857;
+  --color-emerald-400: #059669;
+  --color-amber-300: #b45309;
+  --color-amber-400: #d97706;
+  --color-rose-300: #be123c;
+  --color-rose-400: #e11d48;
+  --color-sky-300: #0369a1;
+  --color-sky-400: #0284c7;
+}
+.dash-theme[data-theme='light'] { background-color: #f4f2f8; }
+
+:is(.dash-theme, .site-theme)[data-theme='light'] :is(.bg-\[\#08070c\], .bg-\[\#14131b\]) { background-color: #f4f2f8; }
+:is(.dash-theme, .site-theme)[data-theme='light'] .bg-\[\#08070c\]\/80 { background-color: rgb(244 242 248 / 0.82); }
+:is(.dash-theme, .site-theme)[data-theme='light'] :is(.bg-\[\#0a090e\], .bg-\[\#16151d\], .bg-\[\#0f0e14\], .bg-\[\#0d0c12\]) { background-color: #ffffff; }
+:is(.dash-theme, .site-theme)[data-theme='light'] .bg-\[\#0e0d13\] {
+  background-color: #ffffff;
+  box-shadow: 0 1px 2px rgb(20 10 40 / 0.04), 0 8px 24px -16px rgb(20 10 40 / 0.12);
+}
+:is(.dash-theme, .site-theme)[data-theme='light'] .bg-\[\#15141b\] { background-color: #fbfbfd; }
+:is(.dash-theme, .site-theme)[data-theme='light'] :is(.bg-\[\#120a1d\], .bg-\[\#2a2440\]) { background-color: #f3e8ff; }
+:is(.dash-theme, .site-theme)[data-theme='light'] .bg-\[\#1a0b2a\] { background-color: #f3e6ff; }
+:is(.dash-theme, .site-theme)[data-theme='light'] .bg-\[\#060509\] { background-color: #f1eff6; }
+:is(.dash-theme, .site-theme)[data-theme='light'] .hover\:bg-\[\#191822\]:hover { background-color: #ece8f3; }
+:is(.dash-theme, .site-theme)[data-theme='light'] .ring-\[\#08070c\] { --tw-ring-color: #f4f2f8; }
+.site-theme[data-theme='light'] .bg-\[\#0b0a10\],
+.site-theme[data-theme='light'].bg-\[\#0b0a10\] { background-color: #faf9fc; }
+.site-theme[data-theme='light'].bg-\[\#0b0a10\]\/85 { background-color: rgb(250 249 252 / 0.85); }
+.site-theme[data-theme='light'] .text-silver {
+  background-image: linear-gradient(180deg, #0b0a10 0%, #2c2a35 55%, #6b6878 100%);
+}
+.site-theme[data-theme='light'] .text-purple-glow {
+  background-image: linear-gradient(100deg, #b54dff 0%, #9e00ff 50%, #6a00b8 100%);
+}
+.site-theme[data-theme='light'] .bg-dot-grid {
+  background-image: radial-gradient(rgb(13 12 18 / 0.09) 1px, transparent 1px);
+}
+
+/* Surfaces that keep the dark palette in day mode: brand buttons, avatars and
+   product "screens" (terminal, feature visuals, menu art). */
+:is(.dash-theme, .site-theme)[data-theme='light'] :is(.bg-coco-purple, .on-accent, .screen) {
+  --color-white: #ffffff;
+  --color-black: #000000;
+  --color-coco-lilac: #d9a6ff;
+  --color-emerald-200: var(--dark-emerald-200);
+  --color-emerald-300: var(--dark-emerald-300);
+  --color-emerald-400: var(--dark-emerald-400);
+  --color-amber-300: var(--dark-amber-300);
+  --color-amber-400: var(--dark-amber-400);
+  --color-rose-300: var(--dark-rose-300);
+  --color-rose-400: var(--dark-rose-400);
+  --color-sky-300: var(--dark-sky-300);
+  --color-sky-400: var(--dark-sky-400);
+}
+:is(.dash-theme, .site-theme)[data-theme='light'] :is(.on-accent, .screen, .bg-coco-purple) {
+  color: #ffffff;
+}
+.site-theme[data-theme='light'] .screen :is(.bg-\[\#0f0e14\], .bg-\[\#0e0d13\], .bg-\[\#08070c\], .bg-\[\#0b0a10\]) {
+  background-color: revert-layer;
+  box-shadow: none;
+}
+.site-theme[data-theme='light'] .menu-art {
+  border-radius: 12px;
+  background-color: #0b0a10;
+  padding: 10px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;

@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { AnimatePresence, motion, useScroll, useSpring } from 'framer-motion';
-import { ArrowDownRight, Moon, Sparkles, Sun } from 'lucide-react';
+import { motion, useScroll, useSpring } from 'framer-motion';
+import { ArrowDownRight, Sparkles } from 'lucide-react';
+import { useTheme } from '../hooks/useTheme';
 import { Logo } from '../components/Logo';
 import Navbar from '../components/site/Navbar';
 import PartnerDemo from '../components/investors/PartnerDemo';
@@ -79,15 +80,10 @@ function InvestorFooter() {
 }
 
 export default function InvestorsPage() {
-  const [theme, setTheme] = useState(() => (typeof window !== 'undefined' && localStorage.getItem('coco-investor-theme')) || 'dark');
+  const { theme, light } = useTheme();
   const [buying, setBuying] = useState(null);
   const { scrollYProgress } = useScroll();
   const progress = useSpring(scrollYProgress, { stiffness: 140, damping: 30, mass: 0.3 });
-  const light = theme === 'light';
-
-  useEffect(() => {
-    localStorage.setItem('coco-investor-theme', theme);
-  }, [theme]);
 
   const onBuy = useCallback((pkg, quantity = 1) => setBuying({ pkg, quantity }), []);
   const close = useCallback(() => setBuying(null), []);
@@ -95,7 +91,7 @@ export default function InvestorsPage() {
   return (
     <div data-theme={theme} className="inv-theme min-h-screen bg-[var(--page)] text-[var(--ink)] transition-colors duration-500">
       <motion.div className="fixed left-0 top-0 z-[70] h-[3px] w-full origin-left bg-gradient-to-r from-coco-purple to-coco-lilac" style={{ scaleX: progress }} />
-      <Navbar />
+      <Navbar themeToggle />
       <main>
         <Hero light={light} onBuy={onBuy} />
         <Manifesto />
@@ -107,18 +103,6 @@ export default function InvestorsPage() {
         <InvestorCta />
       </main>
       <InvestorFooter />
-
-      <button
-        onClick={() => setTheme(light ? 'dark' : 'light')}
-        aria-label={light ? 'Switch to dark theme' : 'Switch to light theme'}
-        className="fixed bottom-5 right-5 z-40 grid h-11 w-11 place-items-center rounded-full border border-[var(--line)] bg-[var(--surface)] text-[var(--ink)] shadow-lg hover:scale-105 transition"
-      >
-        <AnimatePresence mode="wait" initial={false}>
-          <motion.span key={theme} initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }} transition={{ duration: 0.2 }}>
-            {light ? <Moon size={17} /> : <Sun size={17} />}
-          </motion.span>
-        </AnimatePresence>
-      </button>
 
       <CheckoutModal pkg={buying?.pkg} quantity={buying?.quantity} onClose={close} />
     </div>

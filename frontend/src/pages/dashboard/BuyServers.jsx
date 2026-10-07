@@ -16,20 +16,21 @@ function OrderTracker({ order }) {
         icon={Truck}
         action={<span className="rounded-full bg-coco-purple/15 px-2.5 py-1 text-[12px] font-medium text-coco-lilac">In progress</span>}
       />
-      <div className="px-5 pb-6 pt-7">
+      <div className="px-4 pb-5 pt-7 sm:px-5 sm:pb-6">
         <div className="relative flex justify-between">
-          <div className="absolute left-4 right-4 top-4 h-[2px] bg-white/[0.08]" />
-          <motion.div
-            className="absolute left-4 top-4 h-[2px] bg-gradient-to-r from-coco-purple to-coco-violet"
-            initial={{ width: 0 }}
-            animate={{ width: `calc(${(order.step / (ORDER_STEPS.length - 1)) * 100}% - ${(order.step / (ORDER_STEPS.length - 1)) * 2}rem)` }}
-            transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
-          />
+          <div className="absolute left-6 right-6 top-4 h-[2px] bg-white/[0.08] sm:left-8 sm:right-8">
+            <motion.div
+              className="h-full bg-gradient-to-r from-coco-purple to-coco-violet"
+              initial={{ width: 0 }}
+              animate={{ width: `${(order.step / (ORDER_STEPS.length - 1)) * 100}%` }}
+              transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
+            />
+          </div>
           {ORDER_STEPS.map((s, i) => {
             const done = i < order.step;
             const current = i === order.step;
             return (
-              <div key={s} className="relative flex w-16 flex-col items-center gap-2 text-center">
+              <div key={s} className="relative flex w-12 flex-col items-center gap-2 text-center sm:w-16">
                 <span
                   className={`grid h-8 w-8 place-items-center rounded-full border text-[12px] font-semibold ${
                     done ? 'border-coco-purple bg-coco-purple' : current ? 'border-coco-violet bg-[#1a0b2a] text-coco-lilac' : 'border-white/10 bg-[#0e0d13] text-white/40'
@@ -38,7 +39,7 @@ function OrderTracker({ order }) {
                   {done ? <Check size={14} /> : i + 1}
                   {current && <span className="absolute h-8 w-8 animate-ping rounded-full border border-coco-violet/60" />}
                 </span>
-                <span className={`text-[12px] ${done || current ? 'text-white' : 'text-white/40'}`}>{s}</span>
+                <span className={`whitespace-nowrap text-[10.5px] sm:text-[12px] ${done || current ? 'text-white' : 'text-white/40'}`}>{s}</span>
               </div>
             );
           })}

@@ -12,7 +12,7 @@ function useTicker(length, ms) {
 }
 
 const Frame = ({ children, className = '' }) => (
-  <div className={`relative overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0d0c13] ${className}`}>
+  <div className={`screen relative overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0d0c13] ${className}`}>
     <div className="absolute inset-0 bg-dot-grid opacity-60" />
     <div className="relative h-full">{children}</div>
   </div>
