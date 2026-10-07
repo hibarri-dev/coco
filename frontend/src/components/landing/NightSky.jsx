@@ -1,13 +1,3 @@
-import { useMemo } from 'react';
-
-function rng(seed) {
-  let s = seed;
-  return () => {
-    s = (s * 9301 + 49297) % 233280;
-    return s / 233280;
-  };
-}
-
 function Cloud({ className = '', style, tone = 'a', day = false }) {
   const palette = day
     ? { top: '#ffffff', mid: tone === 'a' ? '#f5efff' : '#efe7fb', fade: '#efe7fb', rim: '#ffffff' }
@@ -40,19 +30,6 @@ function Cloud({ className = '', style, tone = 'a', day = false }) {
 }
 
 export default function NightSky({ light = false }) {
-  const stars = useMemo(() => {
-    const r = rng(42);
-    return Array.from({ length: 140 }, (_, i) => ({
-      id: i,
-      x: r() * 100,
-      y: r() * 72,
-      size: r() < 0.88 ? 1 + r() * 1.2 : 2 + r() * 1.4,
-      delay: r() * 6,
-      dur: 3 + r() * 5,
-      purple: r() < 0.1,
-    }));
-  }, []);
-
   return (
     <div className="absolute inset-0 overflow-hidden" aria-hidden="true">
       <div className="absolute inset-0 bg-[linear-gradient(180deg,#07060c_0%,#0d0b17_38%,#160f26_70%,#1d1132_100%)]" />
@@ -62,25 +39,6 @@ export default function NightSky({ light = false }) {
       <div className="absolute -top-40 left-1/2 h-[520px] w-[900px] -translate-x-1/2 rounded-full bg-coco-purple/[0.10] blur-[120px]" />
       <div className={`absolute bottom-[-180px] left-[10%] h-[420px] w-[620px] rounded-full blur-[140px] ${light ? 'bg-coco-purple/10' : 'bg-coco-purple/25'}`} />
       <div className={`absolute bottom-[-200px] right-[5%] h-[380px] w-[560px] rounded-full blur-[140px] ${light ? 'bg-[#5a1aa8]/10' : 'bg-[#5a1aa8]/30'}`} />
-
-      <div className={`transition-opacity duration-700 ${light ? 'opacity-0' : 'opacity-100'}`}>
-      {stars.map((s) => (
-        <span
-          key={s.id}
-          className="absolute rounded-full animate-twinkle"
-          style={{
-            left: `${s.x}%`,
-            top: `${s.y}%`,
-            width: s.size,
-            height: s.size,
-            background: s.purple ? '#d9a6ff' : '#ffffff',
-            boxShadow: s.size > 2 ? `0 0 6px ${s.purple ? '#b54dff' : 'rgba(255,255,255,0.8)'}` : 'none',
-            animationDelay: `${s.delay}s`,
-            animationDuration: `${s.dur}s`,
-          }}
-        />
-      ))}
-      </div>
 
       <div
         className={`absolute right-[12%] top-[14%] h-16 w-16 rounded-full bg-[radial-gradient(circle_at_35%_35%,#ffffff,#d8d4e6_45%,#a49fb8_100%)] shadow-[0_0_80px_20px_rgba(217,166,255,0.18)] transition-all duration-700 ${

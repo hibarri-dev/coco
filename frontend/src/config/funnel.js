@@ -7,6 +7,7 @@ export const BROADCAST = {
   posterUrl: env.VITE_BROADCAST_POSTER_URL || '',
   durationSec: Number(env.VITE_BROADCAST_DURATION_MIN || 75) * 60,
   startHour: 19,
+  whitepaperUrl: env.VITE_WHITEPAPER_URL || encodeURI('/Whitepaper on Compute - Coco by Hibarri.pdf'),
 };
 
 export const OFFER_WINDOW_HOURS = 24;

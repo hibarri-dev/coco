@@ -1,15 +1,23 @@
 import { useCallback, useSyncExternalStore } from 'react';
+import { useLocation } from 'react-router-dom';
 
-const KEY = 'coco-theme';
-const LEGACY_KEY = 'coco-investor-theme';
 const EVENT = 'coco-theme-change';
 
-function read() {
+// Investor pages default to Day (investors prefer light screens); the
+// developer site and dashboard default to Night. Each remembers its own choice.
+const SCOPES = {
+  site: { key: 'coco-theme', fallback: 'dark' },
+  investor: { key: 'coco-theme-investor', fallback: 'light' },
+};
+const INVESTOR_PATHS = /^\/(investors|live|packages|checkout)(\/|$)/;
+
+function read(scope) {
+  const { key, fallback } = SCOPES[scope];
   try {
-    const value = localStorage.getItem(KEY) ?? localStorage.getItem(LEGACY_KEY);
-    return value === 'light' ? 'light' : 'dark';
+    const value = localStorage.getItem(key);
+    return value === 'light' || value === 'dark' ? value : fallback;
   } catch {
-    return 'dark';
+    return fallback;
   }
 }
 
@@ -23,18 +31,23 @@ function subscribe(callback) {
 }
 
 export function useTheme() {
-  const theme = useSyncExternalStore(subscribe, read, () => 'dark');
+  const { pathname } = useLocation();
+  const scope = INVESTOR_PATHS.test(pathname) ? 'investor' : 'site';
+  const theme = useSyncExternalStore(subscribe, () => read(scope), () => SCOPES[scope].fallback);
 
-  const setTheme = useCallback((next) => {
-    try {
-      localStorage.setItem(KEY, next);
-    } catch {
-      /* storage unavailable (private mode) */
-    }
-    window.dispatchEvent(new Event(EVENT));
-  }, []);
+  const setTheme = useCallback(
+    (next) => {
+      try {
+        localStorage.setItem(SCOPES[scope].key, next);
+      } catch {
+        /* storage unavailable (private mode) */
+      }
+      window.dispatchEvent(new Event(EVENT));
+    },
+    [scope],
+  );
 
-  const toggle = useCallback(() => setTheme(read() === 'light' ? 'dark' : 'light'), [setTheme]);
+  const toggle = useCallback(() => setTheme(read(scope) === 'light' ? 'dark' : 'light'), [scope, setTheme]);
 
   return { theme, light: theme === 'light', setTheme, toggle };
 }

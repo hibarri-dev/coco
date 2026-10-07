@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowDownRight, BrainCircuit, Play, Server, Sparkles, Landmark, Lock } from 'lucide-react';
+import { ArrowDownRight, BrainCircuit, ChevronDown, Download, FileText, Play, Server, Sparkles, Landmark, Lock } from 'lucide-react';
 import FunnelLayout from '../../components/funnel/FunnelLayout';
 import Countdown from '../../components/funnel/Countdown';
 import { Modal, Field } from '../../components/funnel/Modal';
@@ -10,6 +10,7 @@ import { BROADCAST } from '../../config/funnel';
 import { dayLabel, formatClock, getRegistration, getSchedule, saveRegistration, timeZoneLabel, useNow } from '../../lib/broadcast';
 import { useVisitor } from '../../lib/visitor';
 import { submitLead } from '../../lib/leads';
+import { DIAL_CODES, findDial, toInternational } from '../../data/dialCodes';
 
 const rise = (delay) => ({
   initial: { opacity: 0, y: 22, filter: 'blur(6px)' },
@@ -34,17 +35,71 @@ function SeatButton({ onClick, className = '' }) {
   );
 }
 
+const CONSENT_TEXT = 'I agree to receive emails from CoCo by Hibarri about this event, investment updates and offers. I can unsubscribe at any time.';
+
+function PhoneField({ iso, onIso, value, onChange, error }) {
+  const current = findDial(iso);
+  return (
+    <div>
+      <span className="mb-1.5 block text-[13px] font-medium">Mobile number</span>
+      <div
+        className={`flex rounded-xl border bg-[var(--surface-2)] transition focus-within:border-coco-purple focus-within:ring-2 focus-within:ring-coco-purple/20 ${
+          error ? 'border-rose-400' : 'border-[var(--line)]'
+        }`}
+      >
+        <label className="relative flex shrink-0 items-center gap-1 border-r border-[var(--line)] pl-3.5 pr-2.5 text-[15px]">
+          <span className={current ? 'font-medium' : 'text-[var(--faint)]'}>{current ? `${current.iso} +${current.dial}` : 'Code'}</span>
+          <ChevronDown size={14} className="text-[var(--faint)]" />
+          <select aria-label="Country code" value={iso} onChange={(e) => onIso(e.target.value)} className="absolute inset-0 cursor-pointer opacity-0">
+            {!current && <option value="">Select your country</option>}
+            {DIAL_CODES.map((c) => (
+              <option key={c.iso} value={c.iso}>
+                {c.name} (+{c.dial})
+              </option>
+            ))}
+          </select>
+        </label>
+        <input
+          type="tel"
+          autoComplete="tel-national"
+          inputMode="tel"
+          aria-label="Mobile number"
+          aria-invalid={Boolean(error)}
+          value={value}
+          onChange={onChange}
+          className="min-w-0 flex-1 bg-transparent px-3.5 py-3 text-[15px] outline-none placeholder:text-[var(--faint)]"
+        />
+      </div>
+      {error && <span className="mt-1 block text-[12px] text-rose-500">{error}</span>}
+    </div>
+  );
+}
+
 function RegisterForm({ visitor, onDone }) {
-  const [form, setForm] = useState({ name: '', email: '', phone: '' });
+  const [form, setForm] = useState({ name: '', email: '', phone: '', iso: '', consent: false });
   const [errors, setErrors] = useState({});
   const [busy, setBusy] = useState(false);
+  const isoTouched = useRef(false);
+
+  useEffect(() => {
+    if (!isoTouched.current && findDial(visitor.countryCode)) setForm((f) => (f.iso ? f : { ...f, iso: visitor.countryCode }));
+  }, [visitor.countryCode]);
+
+  const update = (key, value) => {
+    setForm((f) => ({ ...f, [key]: value }));
+    setErrors((er) => (er[key] ? { ...er, [key]: undefined } : er));
+  };
 
   const submit = async (e) => {
     e.preventDefault();
     const next = {};
+    const typedCode = form.phone.trim().startsWith('+');
+    const digits = form.phone.replace(/\D/g, '').length;
     if (!form.name.trim()) next.name = 'Please enter your name';
     if (!EMAIL.test(form.email.trim())) next.email = 'Please enter a valid email address';
-    if (form.phone.replace(/\D/g, '').length < 7) next.phone = 'Please enter a valid phone number';
+    if (!typedCode && !form.iso) next.phone = 'Please choose your country code';
+    else if (digits < 6 || digits > 15) next.phone = 'Please enter a valid mobile number';
+    if (!form.consent) next.consent = 'Please agree to receive emails so we can send your seat link';
     setErrors(next);
     if (Object.keys(next).length) return;
 
@@ -58,7 +113,9 @@ function RegisterForm({ visitor, onDone }) {
     const lead = {
       name: form.name.trim(),
       email: form.email.trim().toLowerCase(),
-      phone: form.phone.trim(),
+      phone: toInternational(form.iso, form.phone),
+      phoneCountry: form.iso,
+      consent: { email: true, text: CONSENT_TEXT, at: new Date().toISOString() },
       location: {
         city: visitor.city,
         region: visitor.region,
@@ -72,7 +129,7 @@ function RegisterForm({ visitor, onDone }) {
     };
     await submitLead('broadcast-registration', lead);
     saveRegistration(lead);
-    onDone();
+    onDone(lead);
   };
 
   return (
@@ -83,18 +140,87 @@ function RegisterForm({ visitor, onDone }) {
       <h3 className="mt-3 pr-8 text-[22px] font-bold leading-tight">Reserve your seat for {BROADCAST.title}</h3>
       <p className="mt-1.5 text-[14px] text-[var(--muted)]">We'll send your seat link and a reminder before the broadcast starts.</p>
       <div className="mt-5 space-y-3.5">
-        <Field label="Full name" autoComplete="name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} error={errors.name} />
-        <Field label="Email" type="email" autoComplete="email" inputMode="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} error={errors.email} />
-        <Field label="Phone number" type="tel" autoComplete="tel" inputMode="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} error={errors.phone} />
+        <Field label="Full name" autoComplete="name" value={form.name} onChange={(e) => update('name', e.target.value)} error={errors.name} />
+        <Field label="Email" type="email" autoComplete="email" inputMode="email" value={form.email} onChange={(e) => update('email', e.target.value)} error={errors.email} />
+        <PhoneField
+          iso={form.iso}
+          onIso={(iso) => {
+            isoTouched.current = true;
+            update('iso', iso);
+            setErrors((er) => ({ ...er, phone: undefined }));
+          }}
+          value={form.phone}
+          onChange={(e) => update('phone', e.target.value)}
+          error={errors.phone}
+        />
       </div>
+      <label className="mt-4 flex cursor-pointer items-start gap-2.5 text-[13px] leading-snug text-[var(--muted)]">
+        <input
+          type="checkbox"
+          checked={form.consent}
+          onChange={(e) => update('consent', e.target.checked)}
+          aria-invalid={Boolean(errors.consent)}
+          className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-[#9e00ff]"
+        />
+        <span>{CONSENT_TEXT}</span>
+      </label>
+      {errors.consent && <span className="mt-1 block pl-6 text-[12px] text-rose-500">{errors.consent}</span>}
       <button type="submit" disabled={busy} className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-coco-purple py-3.5 text-[15px] font-semibold text-white transition hover:bg-[#ad1fff] disabled:opacity-60">
         <Play size={16} fill="currentColor" /> {busy ? 'Reserving your seat…' : 'Watch the broadcast'}
       </button>
       <p className="mt-3 flex items-start gap-1.5 text-[11.5px] leading-relaxed text-[var(--faint)]">
         <Lock size={12} className="mt-0.5 shrink-0" />
-        By registering you agree to receive emails about this broadcast. We use your IP address to show your local start time and to understand where our audience joins from.
+        We use your IP address to show your local start time and to understand where our audience joins from.
       </p>
     </form>
+  );
+}
+
+function startsIn(ms) {
+  const totalMinutes = Math.max(1, Math.ceil(ms / 60000));
+  const h = Math.floor(totalMinutes / 60);
+  const m = totalMinutes % 60;
+  const part = (n, unit) => `${n} ${unit}${n === 1 ? '' : 's'}`;
+  if (!h) return part(m, 'minute');
+  return m ? `${part(h, 'hour')} ${part(m, 'minute')}` : part(h, 'hour');
+}
+
+function WhitePaper({ lead, msUntil, onContinue }) {
+  const url = BROADCAST.whitepaperUrl;
+  return (
+    <div>
+      <span className="grid h-11 w-11 place-items-center rounded-xl bg-coco-purple/10 text-coco-violet">
+        <FileText size={20} />
+      </span>
+      <h3 className="mt-4 pr-8 text-[22px] font-bold leading-tight">You're in, {lead.name.split(' ')[0]}!</h3>
+      <p className="mt-2 text-[15px] leading-relaxed text-[var(--muted)]">
+        This event starts in <b className="font-semibold text-[var(--ink)]">{startsIn(msUntil)}</b>. In the meantime, here's a free white paper to read on compute,
+        superintelligence and where investment is going!
+      </p>
+      {url ? (
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={() => submitLead('whitepaper-download', { email: lead.email, name: lead.name })}
+          className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-coco-purple py-3.5 text-[15px] font-semibold text-white transition hover:bg-[#ad1fff]"
+        >
+          <Download size={16} /> Read the free white paper
+        </a>
+      ) : (
+        <p className="mt-6 rounded-xl bg-[var(--surface-2)] px-4 py-3 text-[13.5px] text-[var(--muted)]">
+          We'll email the white paper to <b className="font-semibold text-[var(--ink)]">{lead.email}</b>.
+          {import.meta.env.DEV && ' (Set VITE_WHITEPAPER_URL to show a download button.)'}
+        </p>
+      )}
+      <button
+        type="button"
+        onClick={onContinue}
+        className="mt-3 w-full rounded-xl border border-[var(--line)] py-3 text-[14px] font-semibold transition hover:bg-[var(--surface-2)]"
+      >
+        Go to the broadcast room
+      </button>
+    </div>
   );
 }
 
@@ -110,9 +236,11 @@ export default function JoinPage() {
   const now = useNow(1000);
   const schedule = getSchedule(now);
   const [open, setOpen] = useState(false);
+  const [lead, setLead] = useState(null);
   const registered = Boolean(getRegistration()?.lead);
-  const city = visitor.city || 'your city';
-  const when = `${dayLabel(schedule.start, now)} at ${formatClock(schedule.start)} ${timeZoneLabel(schedule.start)}`;
+  const day = dayLabel(schedule.start, now);
+  const time = `${formatClock(schedule.start)} ${timeZoneLabel(schedule.start)}`;
+  const when = visitor.city ? `In ${visitor.city}, ${day.toLowerCase()} at ${time}` : `${day} at ${time}`;
 
   const cta = () => (registered ? navigate('/live/room') : setOpen(true));
 
@@ -125,24 +253,25 @@ export default function JoinPage() {
           <div className="absolute bottom-0 right-0 h-[500px] w-[700px] rounded-full bg-[#2a0a7a]/60 blur-[120px]" />
           <div className="absolute inset-0 bg-grain opacity-[0.18] mix-blend-overlay" />
 
-          <div className="relative mx-auto grid max-w-[1180px] items-center gap-12 px-5 pb-14 pt-14 text-white sm:px-8 sm:pb-20 sm:pt-20 lg:grid-cols-[1.05fr_1fr] lg:gap-14">
+          <div className="relative mx-auto grid max-w-[1180px] items-center gap-8 px-5 pb-10 pt-10 text-white sm:gap-12 sm:px-8 sm:pb-20 sm:pt-20 lg:grid-cols-[1.05fr_1fr] lg:gap-14">
             <div className="text-center lg:text-left">
-              <motion.div {...rise(0)} className="inline-flex items-center gap-2 rounded-full bg-black/35 px-4 py-1.5 text-[13px] text-white/85 backdrop-blur">
-                <span className="relative flex h-2 w-2">
+              <motion.div {...rise(0)} className="inline-flex items-center gap-2 rounded-full bg-black/35 px-3.5 py-1.5 text-[12px] text-white/85 backdrop-blur sm:px-4 sm:text-[13px]">
+                <span className="relative flex h-2 w-2 shrink-0">
                   <span className="absolute inset-0 animate-pulse-ring rounded-full bg-[#d9a6ff]" />
                   <span className="relative h-2 w-2 rounded-full bg-[#d9a6ff]" />
                 </span>
-                Free broadcast · {when}
+                <span>
+                  <b className="font-semibold text-white">Live Event</b> · {when}
+                </span>
               </motion.div>
-              <motion.h1 {...rise(0.08)} className="mt-6 text-[44px] font-bold leading-[0.98] tracking-[-0.035em] sm:text-6xl lg:text-[72px]">
+              <motion.h1 {...rise(0.08)} className="mt-5 text-[36px] font-bold leading-[1] tracking-[-0.03em] sm:mt-6 sm:text-6xl lg:text-[72px]">
                 Real Estate vs <span className="bg-gradient-to-r from-white via-[#ead6ff] to-[#c9a8ff] bg-clip-text text-transparent">Digital Estate</span>
               </motion.h1>
-              <motion.p {...rise(0.16)} className="mx-auto mt-6 max-w-xl text-[17px] leading-relaxed text-white/80 sm:text-lg lg:mx-0">
+              <motion.p {...rise(0.16)} className="mx-auto mt-4 max-w-xl text-[15px] leading-relaxed text-white/80 sm:mt-6 sm:text-lg lg:mx-0">
                 Learn about superintelligence, compute, data centers, servers, and how to get your share of the $1.1 trillion cloud landlord economy.
               </motion.p>
-              <motion.div {...rise(0.24)} className="mt-8 flex flex-col items-center gap-3 lg:items-start">
+              <motion.div {...rise(0.24)} className="mt-8 hidden lg:flex">
                 <SeatButton onClick={cta} />
-                <span className="text-[12.5px] text-white/65">Joining from {city}? It starts at {formatClock(schedule.start)} your time.</span>
               </motion.div>
             </div>
 
@@ -170,16 +299,21 @@ export default function JoinPage() {
               <div className="mt-6 rounded-2xl bg-black/25 p-4 text-center backdrop-blur sm:p-5">
                 {schedule.status === 'live' ? (
                   <>
-                    <div className="text-[13px] font-medium text-white/80">The broadcast started {Math.max(1, Math.floor(schedule.position / 60))} minutes ago</div>
+                    <div className="text-[13px] font-medium text-white/80">The live event started {Math.max(1, Math.floor(schedule.position / 60))} minutes ago</div>
                     <button onClick={cta} className="mt-3 rounded-xl bg-white px-5 py-2.5 text-[14px] font-semibold text-black">Join now</button>
                   </>
                 ) : (
                   <>
-                    <div className="mb-3 text-[12px] font-semibold uppercase tracking-[0.18em] text-white/70">Broadcast starts in</div>
+                    <div className="mb-3 text-[12px] font-semibold uppercase tracking-[0.18em] text-white/70">Live event starts in</div>
                     <Countdown ms={schedule.msUntil} />
                   </>
                 )}
               </div>
+              {schedule.status !== 'live' && (
+                <div className="mt-6 flex justify-center lg:hidden">
+                  <SeatButton onClick={cta} />
+                </div>
+              )}
             </motion.div>
           </div>
         </div>
@@ -210,8 +344,15 @@ export default function JoinPage() {
         </div>
       </section>
 
-      <Modal open={open} onClose={() => setOpen(false)} title="Reserve your seat">
-        <RegisterForm visitor={visitor} onDone={() => navigate('/live/room')} />
+      <Modal open={open} onClose={() => setOpen(false)} title={lead ? 'Your free white paper' : 'Reserve your seat'}>
+        {lead ? (
+          <WhitePaper lead={lead} msUntil={schedule.msUntil ?? 0} onContinue={() => navigate('/live/room')} />
+        ) : (
+          <RegisterForm
+            visitor={visitor}
+            onDone={(l) => (getSchedule().status === 'live' ? navigate('/live/room') : setLead(l))}
+          />
+        )}
       </Modal>
     </FunnelLayout>
   );
