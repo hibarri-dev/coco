@@ -1,8 +1,14 @@
-const env = import.meta.env;
+// Also imported by the serverless functions in /api, where import.meta.env doesn't exist.
+const env = import.meta.env ?? globalThis.process?.env ?? {};
 
+// Hibarri API, e.g. https://api.hibarri.com/api. Superadmin > Coco reads everything sent here.
+export const API_URL = (env.VITE_API_URL || 'https://api.hibarri.com/api').replace(/\/+$/, '');
+
+// Media fields are replaced at startup by the active videos from Superadmin > Coco > Videos (lib/funnelMedia.js).
 export const BROADCAST = {
   title: 'Real Estate vs Digital Estate',
   videoUrl: env.VITE_BROADCAST_VIDEO_URL || '',
+  videoId: env.VITE_BROADCAST_VIDEO_URL ? 'env' : '',
   previewUrl: env.VITE_BROADCAST_PREVIEW_URL || '',
   posterUrl: env.VITE_BROADCAST_POSTER_URL || '',
   durationSec: Number(env.VITE_BROADCAST_DURATION_MIN || 75) * 60,
@@ -13,9 +19,9 @@ export const BROADCAST = {
 export const OFFER_WINDOW_HOURS = 24;
 
 export const ENDPOINTS = {
-  leads: env.VITE_LEADS_ENDPOINT || '',
+  leads: env.VITE_LEADS_ENDPOINT || (API_URL ? `${API_URL}/coco/leads` : ''),
   catalog: env.VITE_CATALOG_ENDPOINT || '',
-  checkout: env.VITE_CHECKOUT_ENDPOINT || '',
+  checkout: env.VITE_CHECKOUT_ENDPOINT || '/api/checkout',
 };
 
 export const BANK = {

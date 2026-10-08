@@ -9,11 +9,18 @@ import { getCatalog, getCountry } from '../../data/catalog';
 import { quote, selectionFromQuery, RACK_MONTHS } from '../../lib/pricing';
 import { getRegistration } from '../../lib/broadcast';
 import { submitLead } from '../../lib/leads';
+import { useFormTracking } from '../../hooks/useFormTracking';
 import { BANK, ENDPOINTS } from '../../config/funnel';
 import { FAQ } from '../../data/funnel';
 import { usd } from '../../data/packages';
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+const CARD_ERRORS = {
+  not_configured: 'Card payments are being connected. Choose wire transfer for now, or request a call back and we will send a secure payment link.',
+  amount_too_large: 'This order is above the card payment limit. Please choose wire transfer, or request a call back.',
+  model_unavailable: 'That server just became unavailable in this data center. Please choose your package again.',
+  unknown: 'We could not start the card payment. Please try again, choose wire transfer, or request a call back.',
+};
 const newReference = () => `CC-${Date.now().toString(36).slice(-5).toUpperCase()}${Math.floor(Math.random() * 90 + 10)}`;
 
 function Section({ title, sub, children }) {
@@ -114,9 +121,45 @@ function Confirmation({ order, q }) {
   );
 }
 
+function PaidConfirmation({ reference, email }) {
+  const timeline = FAQ[0].items.slice(2);
+  return (
+    <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="mx-auto max-w-2xl">
+      <div className="text-center">
+        <CircleCheck size={44} className="mx-auto text-emerald-500" />
+        <h1 className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">Payment received</h1>
+        <p className="mt-2 text-[15px] text-[var(--muted)]">
+          Order <span className="font-mono font-semibold text-[var(--ink)]">{reference}</span> is confirmed.
+          {email ? ` Stripe will email your receipt to ${email}.` : ' Stripe will email your receipt.'}
+        </p>
+      </div>
+
+      <div className="mt-8 rounded-3xl border border-[var(--line)] bg-[var(--surface)] p-6">
+        <h2 className="text-[17px] font-bold">What happens next</h2>
+        <ol className="mt-4 space-y-3">
+          {timeline.map(([step, time], i) => (
+            <li key={step} className="flex items-start gap-3 text-[14px]">
+              <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-coco-purple/10 text-[11px] font-bold text-coco-violet">{i + 1}</span>
+              <span className="flex-1">{step}</span>
+              <span className="shrink-0 text-[12px] font-semibold text-coco-violet">{time}</span>
+            </li>
+          ))}
+        </ol>
+      </div>
+
+      <div className="mt-6 flex flex-wrap justify-center gap-3">
+        <Link to="/dashboard" className="rounded-xl bg-coco-purple px-6 py-3.5 text-[15px] font-semibold text-white hover:bg-[#ad1fff]">Open my dashboard</Link>
+        <CallbackButton context={reference} />
+      </div>
+    </motion.div>
+  );
+}
+
 export default function CheckoutPage({ funnel = false }) {
   const [params] = useSearchParams();
   const selection = useMemo(() => selectionFromQuery(params), [params]);
+  const payment = params.get('payment');
+  const paidReference = params.get('ref');
   const country = getCountry(selection.country);
   const [catalog, setCatalog] = useState(null);
   const lead = getRegistration()?.lead;
@@ -133,12 +176,13 @@ export default function CheckoutPage({ funnel = false }) {
     postal: '',
     country: lead?.location?.country || '',
   });
-  const [method, setMethod] = useState('wire');
+  const [method, setMethod] = useState(payment === 'cancelled' ? 'card' : 'wire');
   const [agree, setAgree] = useState(false);
   const [errors, setErrors] = useState({});
   const [busy, setBusy] = useState(false);
-  const [notice, setNotice] = useState('');
+  const [notice, setNotice] = useState(payment === 'cancelled' ? 'Card payment was cancelled and you have not been charged. You can try again or choose wire transfer.' : '');
   const [order, setOrder] = useState(null);
+  const tracking = useFormTracking('server-order', { active: !order && payment !== 'success' });
 
   useEffect(() => {
     getCatalog(country.id).then(setCatalog);
@@ -172,6 +216,7 @@ export default function CheckoutPage({ funnel = false }) {
       return;
     }
 
+    tracking.submitted();
     setBusy(true);
     setNotice('');
     const payload = {
@@ -187,24 +232,25 @@ export default function CheckoutPage({ funnel = false }) {
     await submitLead('server-order', payload);
 
     if (method === 'card') {
-      if (!ENDPOINTS.checkout) {
-        setNotice('Card payments are being connected. Choose wire transfer for now, or request a call back and we will send a secure payment link.');
-        setBusy(false);
-        return;
-      }
+      let error = 'unknown';
       try {
-        const res = await fetch(ENDPOINTS.checkout, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-        const data = await res.json();
-        if (data?.url) {
+        const res = await fetch(ENDPOINTS.checkout, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...payload, returnPath: funnel ? '/live/checkout' : '/checkout' }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (data.url) {
           window.location.assign(data.url);
           return;
         }
-        throw new Error('No checkout URL');
+        error = data.error ?? error;
       } catch {
-        setNotice('We could not start the card payment. Please try again, choose wire transfer, or request a call back.');
-        setBusy(false);
-        return;
+        /* network failure */
       }
+      setNotice(CARD_ERRORS[error] ?? CARD_ERRORS.unknown);
+      setBusy(false);
+      return;
     }
     setOrder(payload);
     setBusy(false);
@@ -216,6 +262,7 @@ export default function CheckoutPage({ funnel = false }) {
     </FunnelLayout>
   );
 
+  if (payment === 'success' && paidReference) return layout(<PaidConfirmation reference={paidReference} email={lead?.email} />);
   if (order && q) return layout(<Confirmation order={order} q={q} />);
 
   if (catalog && !model) {
@@ -236,7 +283,7 @@ export default function CheckoutPage({ funnel = false }) {
       <h1 className="mt-3 text-[32px] font-bold leading-tight tracking-tight sm:text-4xl">Checkout</h1>
 
       <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_400px] lg:gap-8">
-        <form onSubmit={submit} noValidate className="order-2 space-y-4 lg:order-1">
+        <form onSubmit={submit} noValidate className="order-2 space-y-4 lg:order-1" {...tracking.handlers}>
           <Section title="Your details" sub="Your servers are registered in this name.">
             <div className="grid gap-3.5 sm:grid-cols-2">
               <Field label="Full name" autoComplete="name" value={form.name} onChange={set('name')} error={errors.name} />
@@ -289,6 +336,7 @@ export default function CheckoutPage({ funnel = false }) {
           <label className="flex items-start gap-3 rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-4 text-[13.5px]">
             <input
               type="checkbox"
+              data-track="Risk acknowledgement"
               checked={agree}
               onChange={(e) => {
                 setAgree(e.target.checked);

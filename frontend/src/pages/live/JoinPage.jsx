@@ -11,6 +11,8 @@ import { BROADCAST } from '../../config/funnel';
 import { dayLabel, formatClock, getRegistration, getSchedule, saveRegistration, timeZoneLabel, useNow } from '../../lib/broadcast';
 import { useVisitor } from '../../lib/visitor';
 import { submitLead } from '../../lib/leads';
+import { useFunnelMedia } from '../../lib/funnelMedia';
+import { useFormTracking } from '../../hooks/useFormTracking';
 import { DIAL_CODES, findDial, toInternational } from '../../data/dialCodes';
 
 const rise = (delay) => ({
@@ -81,6 +83,7 @@ function RegisterForm({ visitor, onDone }) {
   const [errors, setErrors] = useState({});
   const [busy, setBusy] = useState(false);
   const isoTouched = useRef(false);
+  const tracking = useFormTracking('broadcast-registration');
 
   useEffect(() => {
     if (!isoTouched.current && findDial(visitor.countryCode)) setForm((f) => (f.iso ? f : { ...f, iso: visitor.countryCode }));
@@ -104,6 +107,7 @@ function RegisterForm({ visitor, onDone }) {
     setErrors(next);
     if (Object.keys(next).length) return;
 
+    tracking.submitted();
     setBusy(true);
     let deviceTimezone = '';
     try {
@@ -134,7 +138,7 @@ function RegisterForm({ visitor, onDone }) {
   };
 
   return (
-    <form onSubmit={submit} noValidate>
+    <form onSubmit={submit} noValidate {...tracking.handlers}>
       <span className="inline-flex items-center gap-1.5 rounded-full bg-coco-purple/10 px-2.5 py-1 text-[11.5px] font-semibold text-coco-violet">
         <Sparkles size={12} /> Free seat
       </span>
@@ -158,6 +162,7 @@ function RegisterForm({ visitor, onDone }) {
       <label className="mt-4 flex cursor-pointer items-start gap-2.5 text-[13px] leading-snug text-[var(--muted)]">
         <input
           type="checkbox"
+          data-track="Email consent"
           checked={form.consent}
           onChange={(e) => update('consent', e.target.checked)}
           aria-invalid={Boolean(errors.consent)}
@@ -233,6 +238,7 @@ const LEARN = [
 ];
 
 export default function JoinPage() {
+  useFunnelMedia();
   const navigate = useNavigate();
   const visitor = useVisitor();
   const now = useNow(1000);

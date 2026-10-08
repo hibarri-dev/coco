@@ -1,4 +1,4 @@
-import { ENDPOINTS } from '../config/funnel';
+import { ENDPOINTS } from '../config/funnel.js';
 
 export const COUNTRIES = [
   { id: 'US', name: 'United States', city: 'Dallas', supplier: 'Dell Technologies US', factor: 1, unavailable: [] },
