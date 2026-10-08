@@ -3,6 +3,7 @@ import { PhoneCall, CircleCheck } from 'lucide-react';
 import { Modal, Field } from './Modal';
 import { submitLead } from '../../lib/leads';
 import { getRegistration } from '../../lib/broadcast';
+import { useFormTracking } from '../../hooks/useFormTracking';
 
 export default function CallbackButton({ className = '', context }) {
   const lead = getRegistration()?.lead;
@@ -10,6 +11,7 @@ export default function CallbackButton({ className = '', context }) {
   const [sent, setSent] = useState(false);
   const [form, setForm] = useState({ name: lead?.name ?? '', phone: lead?.phone ?? '', time: 'Morning' });
   const [errors, setErrors] = useState({});
+  const tracking = useFormTracking('callback-request', { active: open && !sent });
 
   const submit = async (e) => {
     e.preventDefault();
@@ -18,6 +20,7 @@ export default function CallbackButton({ className = '', context }) {
     if (form.phone.replace(/\D/g, '').length < 7) next.phone = 'Please enter a valid phone number';
     setErrors(next);
     if (Object.keys(next).length) return;
+    tracking.submitted();
     await submitLead('callback-request', { ...form, email: lead?.email ?? null, context: context ?? null });
     setSent(true);
   };
@@ -40,7 +43,7 @@ export default function CallbackButton({ className = '', context }) {
             <button onClick={() => setOpen(false)} className="mt-6 rounded-xl bg-coco-purple px-5 py-3 text-[14px] font-semibold text-white">Done</button>
           </div>
         ) : (
-          <form onSubmit={submit} noValidate>
+          <form onSubmit={submit} noValidate {...tracking.handlers}>
             <h3 className="pr-8 text-xl font-bold">Request a call back</h3>
             <p className="mt-1 text-[14px] text-[var(--muted)]">Talk your package through with a partner specialist. No obligation.</p>
             <div className="mt-5 space-y-3.5">

@@ -6,6 +6,8 @@ import BroadcastChat from './BroadcastChat';
 import { BROADCAST } from '../../config/funnel';
 import { calendarFile, dayLabel, formatClock, getRegistration, getSchedule, markCompleted, timeZoneLabel, useNow } from '../../lib/broadcast';
 import { useAudience } from '../../lib/chat';
+import { useFunnelMedia } from '../../lib/funnelMedia';
+import { useVideoTracking } from '../../hooks/useVideoTracking';
 
 const fmt = (s) => {
   const t = Math.max(0, Math.floor(s));
@@ -82,6 +84,8 @@ function EndScreen({ onRecap }) {
 }
 
 function Recap() {
+  const videoRef = useRef(null);
+  useVideoTracking(videoRef, { videoId: BROADCAST.videoId });
   if (!BROADCAST.videoUrl) {
     return (
       <Frame>
@@ -91,7 +95,7 @@ function Recap() {
   }
   return (
     <Frame>
-      <video src={BROADCAST.videoUrl} poster={BROADCAST.posterUrl || undefined} controls autoPlay playsInline className="h-full w-full bg-black" />
+      <video ref={videoRef} src={BROADCAST.videoUrl} poster={BROADCAST.posterUrl || undefined} controls autoPlay playsInline className="h-full w-full bg-black" />
     </Frame>
   );
 }
@@ -114,6 +118,7 @@ function Broadcast({ session, duration, viewers, lead, onDuration, onEnded }) {
   const now = useNow(1000);
   const edge = Math.min(duration, (now - session.start) / 1000);
   const hasVideo = Boolean(BROADCAST.videoUrl);
+  useVideoTracking(videoRef, { videoId: BROADCAST.videoId });
 
   const liveEdge = useCallback(() => Math.min(duration, (Date.now() - session.start.getTime()) / 1000), [duration, session]);
 
@@ -285,6 +290,7 @@ function Broadcast({ session, duration, viewers, lead, onDuration, onEnded }) {
 }
 
 export default function LivePlayer({ registration }) {
+  useFunnelMedia();
   const now = useNow(1000);
   const [mediaDuration, setMediaDuration] = useState(null);
   const duration = mediaDuration || BROADCAST.durationSec;
