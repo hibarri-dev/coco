@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   LayoutDashboard, SquareTerminal, Boxes, Microchip, Gauge, Search, Globe, Code, Database, HardDrive,
-  Check, Rocket, ShieldCheck, CirclePause,
+  Check, Rocket,
 } from 'lucide-react';
 import DemoWindow from '../ui/DemoWindow';
 import Terminal from './Terminal';
@@ -158,42 +158,144 @@ function Gpus() {
   );
 }
 
+const VCPU_LIMIT = 16;
+const MEM_LIMIT_GB = 32;
+const WINDOW_SEC = 60;
+// [service, share of vCPU, share of memory]
+const USAGE_SPLIT = [
+  ['api', 0.38, 0.29],
+  ['worker', 0.27, 0.24],
+  ['web', 0.19, 0.1],
+  ['postgres', 0.16, 0.37],
+];
+
+const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
+
+// Mean-reverting random walk with occasional load spikes, so the lines read like real telemetry.
+const nextCpu = (v) => clamp(v + (10.9 - v) * 0.18 + (Math.random() - 0.5) * 1.6 + (Math.random() < 0.06 ? 2.6 : 0), 5.2, 15.6);
+const nextMem = (v) => clamp(v + (21.7 - v) * 0.08 + (Math.random() - 0.48) * 0.6 + (Math.random() < 0.05 ? 1.4 : 0), 19, 27);
+
+function seed(next, start) {
+  const out = [start];
+  while (out.length < WINDOW_SEC) out.push(next(out[out.length - 1]));
+  return out;
+}
+
+function useLiveUsage() {
+  const [state, setState] = useState(() => ({ tick: 0, cpu: seed(nextCpu, 10.4), mem: seed(nextMem, 21.3) }));
+  useEffect(() => {
+    const id = setInterval(() => {
+      if (document.hidden) return;
+      setState(({ tick, cpu, mem }) => ({
+        tick: tick + 1,
+        cpu: [...cpu.slice(1), nextCpu(cpu[cpu.length - 1])],
+        mem: [...mem.slice(1), nextMem(mem[mem.length - 1])],
+      }));
+    }, 1000);
+    return () => clearInterval(id);
+  }, []);
+  return state;
+}
+
+function LiveChart({ id, data, max, color }) {
+  const W = 300;
+  const H = 80;
+  const line = data.map((v, i) => `${i ? 'L' : 'M'}${((i / (data.length - 1)) * W).toFixed(1)},${(H - (v / max) * H).toFixed(1)}`).join('');
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="h-[56px] w-full sm:h-[60px]" aria-hidden="true">
+      <defs>
+        <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor={color} stopOpacity="0.35" />
+          <stop offset="1" stopColor={color} stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      {[0.25, 0.5, 0.75].map((f) => (
+        <line key={f} x1="0" x2={W} y1={H * f} y2={H * f} stroke="rgba(255,255,255,0.07)" strokeDasharray="3 4" vectorEffect="non-scaling-stroke" />
+      ))}
+      <path d={`${line}L${W},${H}L0,${H}Z`} fill={`url(#${id})`} />
+      <path d={line} fill="none" stroke={color} strokeWidth="1.5" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+    </svg>
+  );
+}
+
+function MetricCard({ id, label, value, total, unit, data, color }) {
+  const pct = (value / total) * 100;
+  return (
+    <div className={`${card} p-3.5`}>
+      <div className="flex items-center justify-between text-[11px]">
+        <span className="text-white/45">{label}</span>
+        <span className={`tabular font-medium ${pct > 85 ? 'text-amber-300' : 'text-white/55'}`}>{pct.toFixed(1)}%</span>
+      </div>
+      <div className="mt-0.5 flex items-baseline gap-1">
+        <span className="text-lg font-bold tabular sm:text-xl">{value.toFixed(unit === 'GB' ? 1 : 2)}</span>
+        <span className="text-[11.5px] text-white/40">
+          / {total} {unit}
+        </span>
+      </div>
+      <div className="mt-2">
+        <LiveChart id={id} data={data} max={total} color={color} />
+      </div>
+      <div className="mt-1 flex justify-between text-[10px] text-white/30">
+        <span>60s ago</span>
+        <span>now</span>
+      </div>
+    </div>
+  );
+}
+
+function UsageBar({ value, max, className }) {
+  return (
+    <div className="mt-1 h-1 overflow-hidden rounded-full bg-white/[0.06]">
+      <div className={`h-full rounded-full transition-[width] duration-700 ${className}`} style={{ width: `${Math.min(100, (value / max) * 100)}%` }} />
+    </div>
+  );
+}
+
 function Usage() {
+  const { tick, cpu, mem } = useLiveUsage();
+  const cpuNow = cpu[cpu.length - 1];
+  const memNow = mem[mem.length - 1];
   return (
     <div className="space-y-3">
-      <div className={`${card} p-4 sm:p-5`}>
-        <div className="flex items-start justify-between">
-          <div>
-            <div className="text-[15px] font-semibold">Acme Labs · Pro</div>
-            <div className="text-[12px] text-white/45">billing@acme.dev</div>
-          </div>
-          <span className="flex items-center gap-1 rounded-full bg-emerald-400/10 px-2.5 py-1 text-[11px] font-medium text-emerald-300">
-            <ShieldCheck size={12} /> verified
-          </span>
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <div className="truncate text-[14px] font-semibold">acme-prod · bare metal</div>
+          <div className="truncate text-[11.5px] text-white/45">Dell PowerEdge R670 · Dallas, TX</div>
         </div>
-        <div className="mt-5 grid grid-cols-3 gap-3 text-[12px]">
-          {[
-            ['Metering', 'per second'],
-            ['Monthly budget', '$600'],
-            ['Saved vs. hyperscaler', '38%'],
-          ].map(([l, v]) => (
-            <div key={l}>
-              <div className="text-white/45">{l}</div>
-              <div className="mt-0.5 text-[15px] font-bold">{v}</div>
-            </div>
-          ))}
-        </div>
-        <div className="mt-5 flex items-center gap-3 text-[12px]">
-          <span className="text-white/45 w-16">This cycle</span>
-          <div className="h-2 flex-1 overflow-hidden rounded-full bg-white/[0.06]">
-            <motion.div initial={{ width: 0 }} animate={{ width: '68.7%' }} transition={{ duration: 1.1, ease: EASE }} className="h-full rounded-full bg-coco-violet" />
-          </div>
-          <span className="font-semibold tabular">$412 / $600</span>
-        </div>
+        <span className="flex shrink-0 items-center gap-1.5 rounded-full bg-emerald-400/10 px-2.5 py-1 text-[11px] font-medium text-emerald-300">
+          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" /> Live · 1s
+        </span>
       </div>
-      <div className="flex items-center gap-2.5 rounded-xl border border-dashed border-white/10 px-4 py-3 text-[12.5px] text-white/55">
-        <CirclePause size={15} className="text-coco-violet" />
-        Approaching your budget? Non-critical services scale down on their own.
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        <MetricCard id="usage-cpu" label="vCPU" value={cpuNow} total={VCPU_LIMIT} unit="vCPU" data={cpu} color="#b54dff" />
+        <MetricCard id="usage-mem" label="Memory" value={memNow} total={MEM_LIMIT_GB} unit="GB" data={mem} color="#c0c0c0" />
+      </div>
+
+      <div className={`${card} px-3.5 py-2`}>
+        <div className="grid grid-cols-[1fr_1fr_1fr] gap-4 pb-1.5 text-[10.5px] uppercase tracking-wider text-white/35">
+          <span>Service</span>
+          <span>vCPU</span>
+          <span>Memory</span>
+        </div>
+        {USAGE_SPLIT.map(([name, cpuShare, memShare], i) => {
+          const jitter = 1 + Math.sin(tick * 0.9 + i * 1.7) * 0.06;
+          const c = cpuNow * cpuShare * jitter;
+          const m = memNow * memShare;
+          return (
+            <div key={name} className="grid grid-cols-[1fr_1fr_1fr] items-center gap-4 border-t border-white/[0.05] py-1.5 text-[12px]">
+              <span className="truncate font-medium">{name}</span>
+              <div className="tabular">
+                {c.toFixed(2)}
+                <UsageBar value={c} max={VCPU_LIMIT / 2} className="bg-coco-violet" />
+              </div>
+              <div className="tabular">
+                {m.toFixed(1)} GB
+                <UsageBar value={m} max={MEM_LIMIT_GB / 2} className="bg-coco-silver" />
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

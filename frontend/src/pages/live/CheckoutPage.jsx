@@ -5,7 +5,7 @@ import { Banknote, CreditCard, ShieldCheck, CircleCheck, Clock, Info, ArrowLeft,
 import FunnelLayout from '../../components/funnel/FunnelLayout';
 import CallbackButton from '../../components/funnel/CallbackButton';
 import { Field } from '../../components/funnel/Modal';
-import { getCatalog, getCountry } from '../../data/catalog';
+import { getCatalog, getLocation, locationLabel } from '../../data/catalog';
 import { quote, selectionFromQuery, selectionQuery, RACK_MONTHS } from '../../lib/pricing';
 import { getRegistration } from '../../lib/broadcast';
 import { submitLead } from '../../lib/leads';
@@ -33,13 +33,13 @@ function Section({ title, sub, children }) {
   );
 }
 
-function Summary({ model, country, q }) {
+function Summary({ model, location, q }) {
   return (
     <div className="rounded-3xl border border-[var(--line)] bg-[var(--surface)] p-5 sm:p-6">
       <div className="text-[12px] font-semibold uppercase tracking-widest text-coco-violet">Order summary</div>
       <div className="mt-1 text-[16px] font-bold leading-snug">{q.qty} × {model.name}</div>
       <div className="text-[12.5px] text-[var(--muted)]">
-        {country.city}, {country.name} · {q.usedU}U of rack space{q.rackU !== q.usedU ? ` (full ${q.rackU}U rack reserved)` : ''}
+        {locationLabel(location)} · {q.usedU}U of rack space{q.rackU !== q.usedU ? ` (full ${q.rackU}U rack reserved)` : ''}
       </div>
       <dl className="mt-4 divide-y divide-[var(--line)] text-[13.5px]">
         <div className="flex justify-between py-2.5"><dt className="text-[var(--muted)]">Servers ({usd(q.unitPrice)} each)</dt><dd className="tabular">{usd(q.serversSubtotal)}</dd></div>
@@ -201,7 +201,7 @@ export default function CheckoutPage({ funnel = false }) {
   const selection = useMemo(() => selectionFromQuery(params), [params]);
   const payment = params.get('payment');
   const paidReference = params.get('ref');
-  const country = getCountry(selection.country);
+  const location = getLocation(selection.location);
   const [catalog, setCatalog] = useState(null);
   const lead = getRegistration()?.lead;
 
@@ -226,8 +226,8 @@ export default function CheckoutPage({ funnel = false }) {
   const tracking = useFormTracking('server-order', { active: !order && payment !== 'success' });
 
   useEffect(() => {
-    getCatalog(country.id).then(setCatalog);
-  }, [country.id]);
+    getCatalog(location.id).then(setCatalog);
+  }, [location.id]);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -268,7 +268,7 @@ export default function CheckoutPage({ funnel = false }) {
       quote: q,
       customer: { name: form.name.trim(), email: form.email.trim(), phone: form.phone.trim(), company: form.company.trim() },
       address: { line1: form.line1, line2: form.line2, city: form.city, region: form.region, postal: form.postal, country: form.country },
-      dataCenter: { country: country.name, city: country.city },
+      dataCenter: { id: location.id, provider: location.provider, city: location.city, region: location.region, country: location.countryName },
     };
     await submitLead('server-order', payload);
 
@@ -319,7 +319,7 @@ export default function CheckoutPage({ funnel = false }) {
     return layout(
       <div className="mx-auto max-w-md py-16 text-center">
         <h1 className="text-2xl font-bold">That server isn't available</h1>
-        <p className="mt-2 text-[var(--muted)]">It may have sold out in {country.name}. Please choose your package again.</p>
+        <p className="mt-2 text-[var(--muted)]">It may have sold out in {location.city}. Please choose your package again.</p>
         <Link to={backTo} className="mt-6 inline-block rounded-xl bg-coco-purple px-5 py-3 font-semibold text-white">Choose a package</Link>
       </div>,
     );
@@ -343,7 +343,7 @@ export default function CheckoutPage({ funnel = false }) {
             </div>
           </Section>
 
-          <Section title="Delivery address" sub={`Servers ship directly to the ${country.city} data center. This address goes on your ownership papers and invoices.`}>
+          <Section title="Delivery address" sub={`Servers ship directly to ${location.provider} in ${location.city}, ${location.region}. This address goes on your ownership papers and invoices.`}>
             <div className="grid gap-3.5 sm:grid-cols-2">
               <Field className="sm:col-span-2" label="Address" autoComplete="address-line1" value={form.line1} onChange={set('line1')} error={errors.line1} />
               <Field className="sm:col-span-2" label="Apartment, suite, etc. (optional)" autoComplete="address-line2" value={form.line2} onChange={set('line2')} />
@@ -414,7 +414,7 @@ export default function CheckoutPage({ funnel = false }) {
         </form>
 
         <aside className="order-1 lg:order-2 lg:sticky lg:top-24 lg:self-start">
-          {q ? <Summary model={model} country={country} q={q} /> : <div className="h-72 animate-pulse rounded-3xl border border-[var(--line)] bg-[var(--surface)]" />}
+          {q ? <Summary model={model} location={location} q={q} /> : <div className="h-72 animate-pulse rounded-3xl border border-[var(--line)] bg-[var(--surface)]" />}
         </aside>
       </div>
     </>,

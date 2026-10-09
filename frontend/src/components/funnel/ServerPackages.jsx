@@ -6,9 +6,9 @@ import { selectionQuery, RACK_PER_U_MONTH, RACK_MONTHS, FULL_RACK_U, MIN_SERVERS
 import { usd } from '../../data/packages';
 
 const RULES = [
-  { icon: Tag, t: 'Supplier price + 10%', d: 'Live Dell pricing for your chosen country. Our 10% covers sourcing, setup and cloud configuration.' },
-  { icon: Server, t: `${usd(RACK_PER_U_MONTH)} per U a month`, d: `Rack space is 1U per server (2U servers use 2U), paid ${RACK_MONTHS} months up front, because you don't need running costs when investing.` },
-  { icon: Percent, t: '10% off at 5, 15% off at 10', d: 'Volume discounts apply to the server price. Rack space is billed at the standard rate on 12 month contract terms x2 years per unit.' },
+  { icon: Tag, t: 'Supplier price + 10%', d: 'Live Dell pricing for your chosen data center. Our 10% covers sourcing, setup and configuration, so there are no setup fees.' },
+  { icon: Server, t: `${usd(RACK_PER_U_MONTH)} per U a month`, d: `Rack space is 1U per server (2U servers use 2U), paid ${RACK_MONTHS} months up front.` },
+  { icon: Percent, t: '10% off at 5, 15% off at 10', d: 'Volume discounts apply to the server price. Rack space is billed at the standard rate.' },
   { icon: Boxes, t: `${MIN_SERVERS} servers or a full rack`, d: `Start with ${MIN_SERVERS} servers, choose your own quantity, or reserve a full ${FULL_RACK_U}U rack.` },
 ];
 

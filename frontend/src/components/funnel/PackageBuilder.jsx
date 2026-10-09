@@ -1,10 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion, useInView } from 'framer-motion';
-import { ArrowRight, Check, Cpu, HardDrive, MemoryStick, Minus, Network, Plus, Info, Sparkles } from 'lucide-react';
+import { ArrowRight, Check, Cpu, HardDrive, MapPin, MemoryStick, Minus, Network, Plus, Info, Sparkles } from 'lucide-react';
 import ServerArt from './ServerArt';
-import { COUNTRIES, getCatalog, getCountry } from '../../data/catalog';
+import { DEFAULT_LOCATION, LOCATIONS, getCatalog, getLocation, locationLabel } from '../../data/catalog';
 import { PACKAGE_TYPES, MIN_SERVERS, RACK_MONTHS, RACK_PER_U_MONTH, COCO_FEE, MARKUP, quote, serversPerRack } from '../../lib/pricing';
-import { useVisitor } from '../../lib/visitor';
 import { usd } from '../../data/packages';
 import { EASE } from '../ui/motion';
 
@@ -81,9 +80,7 @@ function ServerCard({ model, selected, onSelect }) {
 }
 
 export default function PackageBuilder({ ctaLabel = 'Continue to checkout', onContinue, initial = {} }) {
-  const visitor = useVisitor();
-  const touched = useRef(Boolean(initial.country));
-  const [countryId, setCountryId] = useState(initial.country || 'US');
+  const [locationId, setLocationId] = useState(initial.location || DEFAULT_LOCATION);
   const [catalog, setCatalog] = useState(null);
   const [modelId, setModelId] = useState(initial.model || null);
   const [pkg, setPkg] = useState(initial.pkg || 'five');
@@ -92,54 +89,47 @@ export default function PackageBuilder({ ctaLabel = 'Continue to checkout', onCo
   const inView = useInView(root, { margin: '0px 0px -20% 0px' });
 
   useEffect(() => {
-    if (!touched.current && COUNTRIES.some((c) => c.id === visitor.countryCode)) setCountryId(visitor.countryCode);
-  }, [visitor.countryCode]);
-
-  useEffect(() => {
     let alive = true;
     setCatalog(null);
-    getCatalog(countryId).then((items) => alive && setCatalog(items));
+    getCatalog(locationId).then((items) => alive && setCatalog(items));
     return () => {
       alive = false;
     };
-  }, [countryId]);
+  }, [locationId]);
 
-  const country = getCountry(countryId);
+  const location = getLocation(locationId);
   const model = catalog?.find((m) => m.id === modelId) ?? catalog?.[0] ?? null;
   const q = model ? quote(model, pkg, qty) : null;
   const unlockTen = q && pkg !== 'rack' && q.qty < 10;
 
-  const chooseCountry = (id) => {
-    touched.current = true;
-    setCountryId(id);
-  };
-
-  const submit = () => model && onContinue?.({ country: country.id, model: model.id, pkg, qty: q.qty });
+  const submit = () => model && onContinue?.({ location: location.id, model: model.id, pkg, qty: q.qty });
 
   return (
     <div ref={root} className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-10">
       <div className="min-w-0 space-y-10">
         <section>
-          <StepTitle n={1} title="Choose a data center location" sub="Servers are bought in-country and shipped straight to the data center, so there is no cross-border shipping." />
-          <div className="mt-5 grid grid-cols-2 gap-2.5 sm:grid-cols-3">
-            {COUNTRIES.map((c) => {
-              const active = c.id === countryId;
+          <StepTitle n={1} title="Choose a data center location" sub="Servers are bought in-country and shipped straight to our partner data center, so there is no cross-border shipping." />
+          <div className="mt-5 grid grid-cols-2 gap-2.5 sm:grid-cols-3 xl:grid-cols-4">
+            {LOCATIONS.map((l) => {
+              const active = l.id === locationId;
               return (
                 <button
-                  key={c.id}
+                  key={l.id}
                   type="button"
-                  onClick={() => chooseCountry(c.id)}
+                  onClick={() => setLocationId(l.id)}
                   aria-pressed={active}
                   className={`flex items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition ${
                     active ? 'border-coco-purple bg-coco-purple/10' : 'border-[var(--line)] bg-[var(--surface)] hover:border-coco-purple/40'
                   }`}
                 >
-                  <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg text-[11px] font-bold ${active ? 'bg-coco-purple text-white' : 'bg-[var(--surface-2)] text-[var(--muted)]'}`}>
-                    {c.id}
+                  <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg ${active ? 'bg-coco-purple text-white' : 'bg-[var(--surface-2)] text-[var(--muted)]'}`}>
+                    <MapPin size={15} />
                   </span>
                   <span className="min-w-0">
-                    <span className="block truncate text-[13.5px] font-semibold">{c.name}</span>
-                    <span className="block truncate text-[11.5px] text-[var(--faint)]">{c.city}</span>
+                    <span className="block truncate text-[13.5px] font-semibold">
+                      {l.city}, {l.region}
+                    </span>
+                    <span className="block truncate text-[11.5px] text-[var(--faint)]">@ {l.provider}</span>
                   </span>
                 </button>
               );
@@ -148,12 +138,12 @@ export default function PackageBuilder({ ctaLabel = 'Continue to checkout', onCo
         </section>
 
         <section>
-          <StepTitle n={2} title="Pick your server" sub={`Smart Selection servers available from ${country.supplier}. Prices include sourcing and setup.`} />
+          <StepTitle n={2} title="Pick your server" sub={`Smart Selection servers available from ${location.supplier}. Prices include sourcing and setup.`} />
           <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {!catalog &&
               Array.from({ length: 3 }).map((_, i) => <div key={i} className="h-[330px] animate-pulse rounded-2xl border border-[var(--line)] bg-[var(--surface)]" />)}
             {catalog?.map((m, i) => (
-              <motion.div key={`${countryId}-${m.id}`} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04, ease: EASE }}>
+              <motion.div key={`${locationId}-${m.id}`} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04, ease: EASE }}>
                 <ServerCard model={m} selected={model?.id === m.id} onSelect={() => setModelId(m.id)} />
               </motion.div>
             ))}
@@ -223,7 +213,7 @@ export default function PackageBuilder({ ctaLabel = 'Continue to checkout', onCo
           <div className="text-[12px] font-semibold uppercase tracking-widest text-coco-violet">Your package</div>
           <div className="mt-1 text-[17px] font-bold leading-snug">{model ? model.name : 'Loading servers…'}</div>
           <div className="text-[12.5px] text-[var(--muted)]">
-            {country.name} · {country.city} data center
+            {locationLabel(location)}
           </div>
 
           {q && (
@@ -292,7 +282,7 @@ export default function PackageBuilder({ ctaLabel = 'Continue to checkout', onCo
         >
           <div className="mx-auto flex max-w-xl items-center justify-between gap-3">
             <div className="min-w-0">
-              <div className="text-[11.5px] text-[var(--muted)]">{q.qty} servers · {country.name}</div>
+              <div className="text-[11.5px] text-[var(--muted)]">{q.qty} servers · {location.city}, {location.region}</div>
               <div className="text-[18px] font-bold tabular">{usd(q.total)}</div>
             </div>
             <button type="button" onClick={submit} className="flex items-center gap-1.5 rounded-xl bg-coco-purple px-4 py-3 text-[14px] font-semibold text-white">

@@ -29,12 +29,12 @@ export function packageQuantity(model, packageType, quantity) {
 
 const cents = (n) => Math.round(n * 100) / 100;
 
-export const selectionQuery = (s) => new URLSearchParams({ country: s.country, model: s.model, pkg: s.pkg, qty: String(s.qty) }).toString();
+export const selectionQuery = (s) => new URLSearchParams({ location: s.location, model: s.model, pkg: s.pkg, qty: String(s.qty) }).toString();
 
 export function selectionFromQuery(params) {
   const pkg = PACKAGE_TYPES.some((p) => p.id === params.get('pkg')) ? params.get('pkg') : 'five';
   return {
-    country: params.get('country') || 'US',
+    location: params.get('location') || '',
     model: params.get('model') || '',
     pkg,
     qty: Number(params.get('qty')) || MIN_SERVERS,
