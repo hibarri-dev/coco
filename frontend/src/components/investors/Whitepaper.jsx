@@ -14,12 +14,12 @@ import { findDial, toInternational } from '../../data/dialCodes';
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const STORE_KEY = 'coco-whitepaper';
 const FILE_NAME = 'Whitepaper on Compute - Coco by Hibarri.pdf';
-const CONSENT_TEXT = 'I agree to receive emails from CoCo by Hibarri with the white paper, investment updates and offers. I can unsubscribe at any time.';
+const CONSENT_TEXT = 'I agree to receive emails from CoCo by Hibarri LLC.';
 
 const INSIDE = [
-  { icon: BrainCircuit, t: 'Why superintelligence runs on compute' },
-  { icon: Server, t: 'How data centers and servers earn' },
-  { icon: Landmark, t: 'The $1.1 trillion cloud landlord economy' },
+  { icon: BrainCircuit, t: 'Superintelligence' },
+  { icon: Server, t: 'Compute' },
+  { icon: Landmark, t: '$1.1 trillion cloud landlord economy' },
 ];
 
 function readSaved() {
@@ -146,7 +146,7 @@ function RequestForm({ onDone }) {
         <FileText size={20} />
       </span>
       <h3 className="mt-4 text-[22px] font-bold leading-tight">Get the free white paper</h3>
-      <p className="mt-1.5 text-[14px] text-[var(--muted)]">Instant download, plus a copy in your inbox.</p>
+      <p className="mt-1.5 text-[14px] text-[var(--muted)]">Instant download.</p>
       <div className="mt-5 space-y-3.5">
         <Field label="Full name" autoComplete="name" value={form.name} onChange={(e) => update('name', e.target.value)} error={errors.name} />
         <Field label="Email" type="email" autoComplete="email" inputMode="email" value={form.email} onChange={(e) => update('email', e.target.value)} error={errors.email} />
@@ -175,11 +175,11 @@ function RequestForm({ onDone }) {
       </label>
       {errors.consent && <span className="mt-1 block pl-6 text-[12px] text-rose-500">{errors.consent}</span>}
       <button type="submit" disabled={busy} className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-coco-purple py-3.5 text-[15px] font-semibold text-white transition hover:bg-[#ad1fff] disabled:opacity-60">
-        <Download size={16} /> {busy ? 'Preparing your copy…' : 'Get the white paper'}
+        <Download size={16} /> {busy ? 'Preparing your copy…' : 'Download'}
       </button>
       <p className="mt-3 flex items-start gap-1.5 text-[11.5px] leading-relaxed text-[var(--faint)]">
         <Lock size={12} className="mt-0.5 shrink-0" />
-        We never share your details. Unsubscribe from any email in one click.
+        Secured by Hibarri.
       </p>
     </form>
   );
@@ -198,7 +198,7 @@ export default function Whitepaper() {
               White Paper <span className="text-purple-glow">on Compute</span>
             </h2>
             <p className="mt-4 max-w-lg text-[16px] leading-relaxed text-[var(--muted)]">
-              A free read on compute, superintelligence and where investment is going, written for investors rather than engineers.
+              A free read on compute, superintelligence and where investment is going, written for non-technical investors.
             </p>
             <div className="mt-8 grid items-center gap-8 sm:grid-cols-[200px_1fr]">
               <div className="hidden sm:block">
