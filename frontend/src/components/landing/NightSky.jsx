@@ -1,6 +1,6 @@
 function Cloud({ className = '', style, tone = 'a', day = false }) {
   const palette = day
-    ? { top: '#ffffff', mid: tone === 'a' ? '#f6f6f9' : '#eeeef3', fade: '#eeeef3', rim: '#d9a6ff' }
+    ? { top: tone === 'a' ? '#b54dff' : '#c27aff', mid: tone === 'a' ? '#d4a3ff' : '#dfbaff', fade: '#efe0ff', rim: '#9e00ff' }
     : { top: tone === 'a' ? '#3a2f52' : '#2a2340', mid: tone === 'a' ? '#251e38' : '#1c172b', fade: '#120f1c', rim: '#d9a6ff' };
   const { top, mid } = palette;
   const id = `cloud-${day ? 'day' : 'night'}-${tone}`;
@@ -33,12 +33,10 @@ export default function NightSky({ light = false }) {
   return (
     <div className="absolute inset-0 overflow-hidden" aria-hidden="true">
       <div className="absolute inset-0 bg-[linear-gradient(180deg,#07060c_0%,#0d0b17_38%,#160f26_70%,#1d1132_100%)]" />
-      <div
-        className={`absolute inset-0 bg-[linear-gradient(180deg,#f2e0ff_0%,#f8efff_35%,#fdfaff_70%,#ffffff_100%)] transition-opacity duration-700 ${light ? 'opacity-100' : 'opacity-0'}`}
-      />
-      <div className="absolute -top-40 left-1/2 h-[520px] w-[900px] -translate-x-1/2 rounded-full bg-coco-purple/[0.10] blur-[120px]" />
-      <div className={`absolute bottom-[-180px] left-[10%] h-[420px] w-[620px] rounded-full blur-[140px] ${light ? 'bg-coco-purple/10' : 'bg-coco-purple/25'}`} />
-      <div className={`absolute bottom-[-200px] right-[5%] h-[380px] w-[560px] rounded-full blur-[140px] ${light ? 'bg-coco-violet/15' : 'bg-[#5a1aa8]/30'}`} />
+      <div className={`absolute inset-0 bg-[#ffffff] transition-opacity duration-700 ${light ? 'opacity-100' : 'opacity-0'}`} />
+      <div className={`absolute -top-40 left-1/2 h-[520px] w-[900px] -translate-x-1/2 rounded-full bg-coco-purple/[0.10] blur-[120px] transition-opacity duration-700 ${light ? 'opacity-0' : ''}`} />
+      <div className={`absolute bottom-[-180px] left-[10%] h-[420px] w-[620px] rounded-full bg-coco-purple/25 blur-[140px] transition-opacity duration-700 ${light ? 'opacity-0' : ''}`} />
+      <div className={`absolute bottom-[-200px] right-[5%] h-[380px] w-[560px] rounded-full bg-[#5a1aa8]/30 blur-[140px] transition-opacity duration-700 ${light ? 'opacity-0' : ''}`} />
 
       <div
         className={`absolute right-[12%] top-[14%] h-16 w-16 rounded-full bg-[radial-gradient(circle_at_35%_35%,#ffffff,#d8d4e6_45%,#a49fb8_100%)] shadow-[0_0_80px_20px_rgba(217,166,255,0.18)] transition-all duration-700 ${
@@ -46,7 +44,7 @@ export default function NightSky({ light = false }) {
         }`}
       />
       <div
-        className={`absolute right-[11%] top-[12%] h-20 w-20 rounded-full bg-[radial-gradient(circle_at_40%_40%,#ffffff,#f1dcff_50%,#d9a6ff_100%)] shadow-[0_0_90px_30px_rgba(181,77,255,0.35)] transition-all duration-700 ${
+        className={`absolute right-[11%] top-[12%] h-20 w-20 rounded-full bg-[radial-gradient(circle_at_40%_40%,#e7c6ff,#b54dff_45%,#7a00cc_100%)] shadow-[0_0_90px_30px_rgba(158,0,255,0.35)] transition-all duration-700 ${
           light ? 'opacity-100' : 'scale-50 opacity-0'
         }`}
       />

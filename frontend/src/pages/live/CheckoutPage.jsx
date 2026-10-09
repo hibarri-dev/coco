@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Banknote, CreditCard, ShieldCheck, CircleCheck, Info, ArrowLeft, Copy, Check } from 'lucide-react';
+import { Banknote, CreditCard, ShieldCheck, CircleCheck, Clock, Info, ArrowLeft, Copy, Check } from 'lucide-react';
 import FunnelLayout from '../../components/funnel/FunnelLayout';
 import CallbackButton from '../../components/funnel/CallbackButton';
 import { Field } from '../../components/funnel/Modal';
 import { getCatalog, getCountry } from '../../data/catalog';
-import { quote, selectionFromQuery, RACK_MONTHS } from '../../lib/pricing';
+import { quote, selectionFromQuery, selectionQuery, RACK_MONTHS } from '../../lib/pricing';
 import { getRegistration } from '../../lib/broadcast';
 import { submitLead } from '../../lib/leads';
 import { useFormTracking } from '../../hooks/useFormTracking';
@@ -121,17 +121,58 @@ function Confirmation({ order, q }) {
   );
 }
 
-function PaidConfirmation({ reference, email }) {
+function usePaymentStatus(sessionId) {
+  const [result, setResult] = useState({ status: sessionId ? 'checking' : 'unverified' });
+  useEffect(() => {
+    if (!sessionId) return undefined;
+    let alive = true;
+    fetch(`${ENDPOINTS.checkout}?session_id=${encodeURIComponent(sessionId)}`)
+      .then((res) => (res.ok ? res.json() : Promise.reject(new Error(String(res.status)))))
+      .then((data) => alive && setResult(data))
+      .catch(() => alive && setResult({ status: 'unverified' }));
+    return () => {
+      alive = false;
+    };
+  }, [sessionId]);
+  return result;
+}
+
+const PAID_COPY = {
+  paid: { title: 'Payment received', icon: CircleCheck, tone: 'text-emerald-500' },
+  processing: { title: 'Payment processing', icon: Clock, tone: 'text-amber-500' },
+  unpaid: { title: 'Payment not completed', icon: Info, tone: 'text-rose-500' },
+  unverified: { title: 'Confirming your payment', icon: Clock, tone: 'text-coco-violet' },
+};
+
+function PaidConfirmation({ reference, sessionId, email: fallbackEmail, retryTo }) {
   const timeline = FAQ[0].items.slice(2);
+  const payment = usePaymentStatus(sessionId);
+  const email = payment.email || fallbackEmail;
+  if (payment.status === 'checking') {
+    return <div className="mx-auto h-64 max-w-2xl animate-pulse rounded-3xl border border-[var(--line)] bg-[var(--surface)]" />;
+  }
+  const copy = PAID_COPY[payment.status] ?? PAID_COPY.unverified;
+  const message = {
+    paid: email ? `Stripe will email your receipt to ${email}.` : 'Stripe will email your receipt.',
+    processing: 'Your bank payment is on its way. We will email you as soon as it clears, usually within 1–4 business days.',
+    unpaid: 'Stripe has not confirmed this payment and you have not been charged. Please try again or choose wire transfer.',
+    unverified: 'We are confirming your payment with Stripe. You will receive an email once it is confirmed.',
+  }[payment.status] ?? '';
   return (
     <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="mx-auto max-w-2xl">
       <div className="text-center">
-        <CircleCheck size={44} className="mx-auto text-emerald-500" />
-        <h1 className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">Payment received</h1>
+        <copy.icon size={44} className={`mx-auto ${copy.tone}`} />
+        <h1 className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">{copy.title}</h1>
         <p className="mt-2 text-[15px] text-[var(--muted)]">
-          Order <span className="font-mono font-semibold text-[var(--ink)]">{reference}</span> is confirmed.
-          {email ? ` Stripe will email your receipt to ${email}.` : ' Stripe will email your receipt.'}
+          Order <span className="font-mono font-semibold text-[var(--ink)]">{reference}</span>
+          {payment.status === 'paid' ? ' is confirmed. ' : '. '}
+          {message}
         </p>
+        {payment.status === 'unpaid' && (
+          <Link to={retryTo} className="mt-6 inline-block rounded-xl bg-coco-purple px-6 py-3.5 text-[15px] font-semibold text-white hover:bg-[#ad1fff]">
+            Back to checkout
+          </Link>
+        )}
       </div>
 
       <div className="mt-8 rounded-3xl border border-[var(--line)] bg-[var(--surface)] p-6">
@@ -262,7 +303,16 @@ export default function CheckoutPage({ funnel = false }) {
     </FunnelLayout>
   );
 
-  if (payment === 'success' && paidReference) return layout(<PaidConfirmation reference={paidReference} email={lead?.email} />);
+  if (payment === 'success' && paidReference) {
+    return layout(
+      <PaidConfirmation
+        reference={paidReference}
+        sessionId={params.get('session_id')}
+        email={lead?.email}
+        retryTo={`${funnel ? '/live/checkout' : '/checkout'}?${selectionQuery(selection)}`}
+      />,
+    );
+  }
   if (order && q) return layout(<Confirmation order={order} q={q} />);
 
   if (catalog && !model) {

@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /dashboard
+Disallow: /checkout
+Disallow: /live/room
+Disallow: /live/offer
+Disallow: /live/checkout
+
+Sitemap: https://coco.hibarri.com/sitemap.xml

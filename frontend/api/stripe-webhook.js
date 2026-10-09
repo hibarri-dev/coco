@@ -20,7 +20,15 @@ export async function POST(request) {
   // The Stripe account is shared with other Hibarri projects, so their events arrive here too.
   if (session?.metadata?.app !== 'coco') return json({ received: true, ignored: true });
 
-  if (event.type === 'checkout.session.completed' && session.payment_status === 'paid') {
+  // Bank debits (ACH, SEPA) complete the session as "unpaid" and settle days later via async_payment_succeeded.
+  const paid =
+    (event.type === 'checkout.session.completed' && session.payment_status === 'paid') || event.type === 'checkout.session.async_payment_succeeded';
+  if (event.type === 'checkout.session.async_payment_failed') {
+    console.warn('[stripe-webhook] async payment failed', session.client_reference_id);
+    await forwardToLeads({ reference: session.client_reference_id, sessionId: session.id, ...session.metadata }, 'server-order-payment-failed');
+  }
+
+  if (paid) {
     const order = {
       reference: session.client_reference_id,
       sessionId: session.id,
@@ -38,14 +46,14 @@ export async function POST(request) {
   return json({ received: true });
 }
 
-async function forwardToLeads(order) {
+async function forwardToLeads(order, form = 'server-order-paid') {
   const endpoint = process.env.LEADS_ENDPOINT || process.env.VITE_LEADS_ENDPOINT;
   if (!endpoint || endpoint.startsWith('/')) return;
   try {
     await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ form: 'server-order-paid', data: order, submittedAt: new Date().toISOString() }),
+      body: JSON.stringify({ form, data: order, submittedAt: new Date().toISOString() }),
     });
   } catch (err) {
     console.error('[stripe-webhook] could not forward order', err?.message);

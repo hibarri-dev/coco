@@ -7,7 +7,11 @@ import { Logo } from '../components/Logo';
 import Navbar from '../components/site/Navbar';
 import PartnerDemo from '../components/investors/PartnerDemo';
 import { Manifesto, Bento, HowItWorks, Faq, InvestorCta } from '../components/investors/Sections';
+import HardwareToSoftware from '../components/investors/HardwareToSoftware';
+import LoadBalancing from '../components/investors/LoadBalancing';
+import Whitepaper from '../components/investors/Whitepaper';
 import ServerPackages from '../components/funnel/ServerPackages';
+import { RealEstateVsServers, Testimonials } from '../components/funnel/Sections';
 import { EASE } from '../components/ui/motion';
 
 const rise = (delay) => ({
@@ -80,6 +84,7 @@ function InvestorFooter() {
       <div className="flex flex-wrap gap-6">
         <Link to="/" className="hover:text-[var(--ink)]">CoCo Cloud</Link>
         <Link to="/dashboard" className="hover:text-[var(--ink)]">Partner dashboard</Link>
+        <a href="#whitepaper" className="hover:text-[var(--ink)]">White paper</a>
         <a href="#faq" className="hover:text-[var(--ink)]">FAQ</a>
         <a href="mailto:partners@hibarri.com" className="hover:text-[var(--ink)]">Contact</a>
       </div>
@@ -102,8 +107,13 @@ export default function InvestorsPage() {
       <main>
         <Hero light={light} onBuy={onBuy} />
         <Manifesto />
+        <HardwareToSoftware />
+        <LoadBalancing />
         <Bento />
         <HowItWorks />
+        <RealEstateVsServers ctaTo="#packages" />
+        <Whitepaper />
+        <Testimonials />
         <ServerPackages className="pb-28 sm:pb-36" />
         <Faq />
         <InvestorCta />
