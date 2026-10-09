@@ -14,7 +14,10 @@ export function loadFunnelMedia() {
     return;
   }
   status = 'loading';
-  fetch(`${API_URL}/coco/public/funnel`, { credentials: 'omit', signal: AbortSignal.timeout?.(6000) })
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 6000);
+
+  fetch(`${API_URL}/coco/public/funnel`, { credentials: 'omit', signal: controller.signal })
     .then((res) => (res.ok ? res.json() : null))
     .then((data) => {
       const video = data?.broadcast?.video;
@@ -29,6 +32,7 @@ export function loadFunnelMedia() {
     })
     .catch(() => {})
     .finally(() => {
+      clearTimeout(timeoutId);
       status = 'done';
       listeners.forEach((fn) => fn());
       listeners.clear();

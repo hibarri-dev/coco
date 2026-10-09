@@ -118,7 +118,7 @@ export default function PackageBuilder({ ctaLabel = 'Continue to checkout', onCo
 
   return (
     <div ref={root} className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-10">
-      <div className="space-y-10">
+      <div className="min-w-0 space-y-10">
         <section>
           <StepTitle n={1} title="Choose a data center location" sub="Servers are bought in-country and shipped straight to the data center, so there is no cross-border shipping." />
           <div className="mt-5 grid grid-cols-2 gap-2.5 sm:grid-cols-3">

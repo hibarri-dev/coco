@@ -4,6 +4,12 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      // iOS Safari zooms into inputs under 16px on focus. maximum-scale stops that and still allows pinch-zoom on iOS.
+      if (/iP(hone|od|ad)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) {
+        document.querySelector('meta[name="viewport"]').content += ', maximum-scale=1';
+      }
+    </script>
     <meta name="theme-color" content="#000000" />
     <meta
       name="description"

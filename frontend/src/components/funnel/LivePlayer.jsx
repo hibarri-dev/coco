@@ -40,7 +40,7 @@ function WaitingRoom({ schedule, name, now }) {
     const url = URL.createObjectURL(blob);
     const a = Object.assign(document.createElement('a'), { href: url, download: 'coco-broadcast.ics' });
     a.click();
-    URL.revokeObjectURL(url);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
   return (
     <Frame>
@@ -127,18 +127,28 @@ function Broadcast({ session, duration, viewers, lead, onDuration, onEnded }) {
     if (v && v.currentTime > liveEdge() + 1.5) v.currentTime = liveEdge();
   }, [liveEdge]);
 
-  const started = useRef(false);
-  useEffect(() => {
+  const synced = useRef(false);
+  const play = useCallback(() => {
     const v = videoRef.current;
-    if (!v || started.current) return;
-    const start = () => {
-      started.current = true;
-      v.currentTime = liveEdge();
-      v.play().catch(() => setPlaying(false));
-    };
-    if (v.readyState >= 1) start();
-    else v.addEventListener('loadedmetadata', start, { once: true });
+    if (!v) return;
+    // iOS Safari only loads metadata after play(), so the live-edge seek has to wait for it.
+    if (!synced.current) {
+      synced.current = true;
+      const seek = () => {
+        v.currentTime = liveEdge();
+      };
+      if (v.readyState >= 1) seek();
+      else v.addEventListener('loadedmetadata', seek, { once: true });
+    }
+    v.play().catch(() => setPlaying(false));
   }, [liveEdge]);
+
+  const autoplayed = useRef(false);
+  useEffect(() => {
+    if (autoplayed.current || !videoRef.current) return;
+    autoplayed.current = true;
+    play();
+  }, [play]);
 
   useEffect(() => {
     if (!hasVideo && edge >= duration) onEnded();
@@ -152,8 +162,17 @@ function Broadcast({ session, duration, viewers, lead, onDuration, onEnded }) {
   const toggle = () => {
     const v = videoRef.current;
     if (!v) return;
-    if (v.paused) v.play();
+    if (v.paused) play();
     else v.pause();
+  };
+
+  const fullscreen = () => {
+    const el = wrapRef.current;
+    // iPhone Safari has no element fullscreen; only the video itself can go fullscreen.
+    const native = () => videoRef.current?.webkitEnterFullscreen?.();
+    if (el?.requestFullscreen) el.requestFullscreen().catch(native);
+    else if (el?.webkitRequestFullscreen) el.webkitRequestFullscreen();
+    else native();
   };
 
   const onKey = (e) => {
@@ -271,7 +290,7 @@ function Broadcast({ session, duration, viewers, lead, onDuration, onEnded }) {
                   </button>
                 )}
                 {hasVideo && (
-                  <button onClick={() => wrapRef.current?.requestFullscreen?.()} className="grid h-8 w-8 place-items-center rounded-lg hover:bg-white/10" aria-label="Full screen">
+                  <button onClick={fullscreen} className="grid h-8 w-8 place-items-center rounded-lg hover:bg-white/10" aria-label="Full screen">
                     <Maximize size={15} />
                   </button>
                 )}
