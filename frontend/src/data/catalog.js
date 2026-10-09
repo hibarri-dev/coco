@@ -1,16 +1,35 @@
 import { ENDPOINTS } from '../config/funnel.js';
 
-export const COUNTRIES = [
-  { id: 'US', name: 'United States', city: 'Dallas', supplier: 'Dell Technologies US', factor: 1, unavailable: [] },
-  { id: 'GB', name: 'United Kingdom', city: 'London', supplier: 'Dell Technologies UK', factor: 1.07, unavailable: [] },
-  { id: 'NL', name: 'Netherlands', city: 'Amsterdam', supplier: 'Dell Technologies NL', factor: 1.06, unavailable: [] },
-  { id: 'DK', name: 'Denmark', city: 'Copenhagen', supplier: 'Dell Technologies DK', factor: 1.1, unavailable: ['r4715'] },
-  { id: 'BE', name: 'Belgium', city: 'Brussels', supplier: 'Dell Technologies BE', factor: 1.06, unavailable: ['r5715'] },
-  { id: 'AU', name: 'Australia', city: 'Sydney', supplier: 'Dell Technologies AU', factor: 1.12, unavailable: [] },
-  { id: 'ZA', name: 'South Africa', city: 'Johannesburg', supplier: 'Dell Technologies ZA', factor: 1.15, unavailable: ['r4715', 'r5715'] },
-  { id: 'AE', name: 'Dubai', city: 'Dubai', supplier: 'Dell Technologies UAE', factor: 1.05, unavailable: ['r4715'] },
-  { id: 'SG', name: 'Singapore', city: 'Singapore', supplier: 'Dell Technologies SG', factor: 1.08, unavailable: [] },
+const DEDICATED = 'Dedicated Datacenters';
+const US = { country: 'US', countryName: 'United States', supplier: 'Dell Technologies US', factor: 1, unavailable: [] };
+
+// Partner data centers. `factor` adjusts the sample supplier price per country.
+export const LOCATIONS = [
+  { id: 'lax', city: 'Los Angeles', region: 'CA', provider: DEDICATED, ...US },
+  { id: 'sea', city: 'Seattle', region: 'WA', provider: DEDICATED, ...US },
+  { id: 'dfw', city: 'Dallas', region: 'TX', provider: DEDICATED, ...US },
+  { id: 'chi', city: 'Chicago', region: 'IL', provider: DEDICATED, ...US },
+  { id: 'fnt', city: 'Flint', region: 'MI', provider: 'Sectorlink Data Center', ...US },
+  { id: 'atl', city: 'Atlanta', region: 'GA', provider: DEDICATED, ...US },
+  { id: 'nyc', city: 'New York', region: 'NY', provider: DEDICATED, ...US },
+  {
+    id: 'mtl',
+    city: 'Montreal',
+    region: 'QC',
+    provider: DEDICATED,
+    country: 'CA',
+    countryName: 'Canada',
+    supplier: 'Dell Technologies Canada',
+    factor: 1.04,
+    unavailable: [],
+  },
 ];
+
+export const DEFAULT_LOCATION = LOCATIONS[0].id;
+
+export const getLocation = (id) => LOCATIONS.find((l) => l.id === id) ?? LOCATIONS[0];
+
+export const locationLabel = (l) => `${l.city}, ${l.region} @ ${l.provider}`;
 
 // Sample Smart Selection configurations. Replace with supplier API data
 // (VITE_CATALOG_ENDPOINT); prices are USD supplier prices before CoCo's markup.
@@ -72,14 +91,11 @@ const MODELS = [
   },
 ];
 
-export const getCountry = (id) => COUNTRIES.find((c) => c.id === id) ?? COUNTRIES[0];
-
-function sampleCatalog(countryId) {
-  const country = getCountry(countryId);
-  return MODELS.filter((m) => !country.unavailable.includes(m.id)).map(({ basePrice, ...m }) => ({
+function sampleCatalog(location) {
+  return MODELS.filter((m) => !location.unavailable.includes(m.id)).map(({ basePrice, ...m }) => ({
     ...m,
-    supplierPrice: Math.round((basePrice * country.factor) / 10) * 10,
-    supplier: country.supplier,
+    supplierPrice: Math.round((basePrice * location.factor) / 10) * 10,
+    supplier: location.supplier,
     image: null,
     sample: true,
   }));
@@ -87,12 +103,14 @@ function sampleCatalog(countryId) {
 
 const cache = new Map();
 
-export async function getCatalog(countryId) {
-  if (cache.has(countryId)) return cache.get(countryId);
-  let items = sampleCatalog(countryId);
+export async function getCatalog(locationId) {
+  if (cache.has(locationId)) return cache.get(locationId);
+  const location = getLocation(locationId);
+  let items = sampleCatalog(location);
   if (ENDPOINTS.catalog) {
     try {
-      const res = await fetch(`${ENDPOINTS.catalog}?country=${encodeURIComponent(countryId)}`);
+      const query = new URLSearchParams({ location: location.id, country: location.country });
+      const res = await fetch(`${ENDPOINTS.catalog}?${query}`);
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data) && data.length) items = data.map((m) => ({ ...m, sample: false }));
@@ -101,6 +119,6 @@ export async function getCatalog(countryId) {
       /* fall back to sample catalog */
     }
   }
-  cache.set(countryId, items);
+  cache.set(locationId, items);
   return items;
 }

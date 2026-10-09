@@ -1,5 +1,5 @@
 import { getStripe, json } from './_lib/stripe.js';
-import { getCatalog, getCountry } from '../src/data/catalog.js';
+import { getCatalog, getLocation, locationLabel } from '../src/data/catalog.js';
 import { quote, selectionQuery, PACKAGE_TYPES, RACK_MONTHS } from '../src/lib/pricing.js';
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -52,8 +52,8 @@ export async function POST(request) {
   if (!PACKAGE_TYPES.some((p) => p.id === selection.pkg)) return json({ error: 'invalid_package' }, 400);
 
   // Prices are always recomputed here; the total sent by the browser is never trusted.
-  const country = getCountry(selection.country);
-  const catalog = await getCatalog(country.id);
+  const location = getLocation(selection.location);
+  const catalog = await getCatalog(location.id);
   const model = catalog.find((m) => m.id === selection.model);
   if (!model) return json({ error: 'model_unavailable' }, 400);
   const q = quote(model, selection.pkg, Number(selection.qty));
@@ -64,14 +64,15 @@ export async function POST(request) {
 
   const origin = process.env.SITE_URL || new URL(request.url).origin;
   const returnPath = RETURN_PATHS.includes(body.returnPath) ? body.returnPath : '/checkout';
-  const query = selectionQuery({ country: country.id, model: model.id, pkg: selection.pkg, qty: q.qty });
+  const query = selectionQuery({ location: location.id, model: model.id, pkg: selection.pkg, qty: q.qty });
   const back = (status) => `${origin}${returnPath}?${query}&payment=${status}&ref=${reference}`;
 
   const metadata = {
     app: 'coco',
     reference,
-    country: country.id,
-    dataCenter: `${country.city}, ${country.name}`,
+    location: location.id,
+    country: location.country,
+    dataCenter: locationLabel(location),
     model: model.id,
     package: selection.pkg,
     quantity: String(q.qty),
@@ -107,7 +108,7 @@ export async function POST(request) {
               unit_amount: rackCents,
               product_data: {
                 name: `Rack space, ${RACK_MONTHS} months`,
-                description: `${q.rackU}U in ${country.city}, ${country.name}`,
+                description: `${q.rackU}U at ${locationLabel(location)}`,
               },
             },
           },
