@@ -45,7 +45,7 @@ function Point({ status, text }) {
   );
 }
 
-export function RealEstateVsServers({ showCta = true }) {
+export function RealEstateVsServers({ showCta = true, ctaTo }) {
   return (
     <section className="mx-auto max-w-[1060px] px-4 py-20 sm:px-6 sm:py-28">
       <Reveal className="text-center">
@@ -75,7 +75,7 @@ export function RealEstateVsServers({ showCta = true }) {
       </Reveal>
       {showCta && (
         <div className="mt-8 flex justify-center">
-          <InvestCta />
+          <InvestCta to={ctaTo} />
         </div>
       )}
     </section>

@@ -22,6 +22,7 @@ export const ENDPOINTS = {
   leads: env.VITE_LEADS_ENDPOINT || (API_URL ? `${API_URL}/coco/leads` : ''),
   catalog: env.VITE_CATALOG_ENDPOINT || '',
   checkout: env.VITE_CHECKOUT_ENDPOINT || '/api/checkout',
+  email: env.VITE_EMAIL_ENDPOINT || '/api/email',
 };
 
 export const BANK = {

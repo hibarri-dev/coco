@@ -8,8 +8,31 @@ const RETURN_PATHS = ['/checkout', '/live/checkout'];
 // Stripe's per-payment ceiling for USD card payments.
 const MAX_AMOUNT_CENTS = 99_999_999;
 
+const SESSION_ID = /^cs_(test|live)_[A-Za-z0-9]+$/;
+
 const clip = (value, max = 200) => String(value ?? '').trim().slice(0, max);
 const toCents = (usd) => Math.round(usd * 100);
+
+// The success page calls this so "Payment received" is only shown once Stripe confirms it.
+export async function GET(request) {
+  const stripe = getStripe();
+  if (!stripe) return json({ error: 'not_configured' }, 503);
+  const id = new URL(request.url).searchParams.get('session_id') ?? '';
+  if (!SESSION_ID.test(id)) return json({ error: 'invalid_session' }, 400);
+  try {
+    const session = await stripe.checkout.sessions.retrieve(id);
+    if (session.metadata?.app !== 'coco') return json({ error: 'not_found' }, 404);
+    return json({
+      status: session.payment_status === 'paid' || session.payment_status === 'no_payment_required' ? 'paid' : session.status === 'complete' ? 'processing' : 'unpaid',
+      reference: session.client_reference_id,
+      email: session.customer_details?.email ?? session.customer_email ?? null,
+      amount: session.amount_total / 100,
+    });
+  } catch (err) {
+    console.error('[checkout] session lookup failed', err?.type, err?.message);
+    return json({ error: 'not_found' }, 404);
+  }
+}
 
 export async function POST(request) {
   const stripe = getStripe();

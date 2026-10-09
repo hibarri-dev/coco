@@ -1,7 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { X } from 'lucide-react';
+import { ChevronDown, X } from 'lucide-react';
 import { EASE } from '../ui/motion';
+import { DIAL_CODES, findDial } from '../../data/dialCodes';
 
 export function Modal({ open, onClose, title, children }) {
   const panel = useRef(null);
@@ -61,5 +62,43 @@ export function Field({ label, error, className = '', ...props }) {
       />
       {error && <span className="mt-1 block text-[12px] text-rose-500">{error}</span>}
     </label>
+  );
+}
+
+export function PhoneField({ iso, onIso, value, onChange, error }) {
+  const current = findDial(iso);
+  return (
+    <div>
+      <span className="mb-1.5 block text-[13px] font-medium">Mobile number</span>
+      <div
+        className={`flex rounded-xl border bg-[var(--surface-2)] transition focus-within:border-coco-purple focus-within:ring-2 focus-within:ring-coco-purple/20 ${
+          error ? 'border-rose-400' : 'border-[var(--line)]'
+        }`}
+      >
+        <label className="relative flex shrink-0 items-center gap-1 border-r border-[var(--line)] pl-3.5 pr-2.5 text-[15px]">
+          <span className={current ? 'font-medium' : 'text-[var(--faint)]'}>{current ? `${current.iso} +${current.dial}` : 'Code'}</span>
+          <ChevronDown size={14} className="text-[var(--faint)]" />
+          <select aria-label="Country code" value={iso} onChange={(e) => onIso(e.target.value)} className="absolute inset-0 cursor-pointer opacity-0">
+            {!current && <option value="">Select your country</option>}
+            {DIAL_CODES.map((c) => (
+              <option key={c.iso} value={c.iso}>
+                {c.name} (+{c.dial})
+              </option>
+            ))}
+          </select>
+        </label>
+        <input
+          type="tel"
+          autoComplete="tel-national"
+          inputMode="tel"
+          aria-label="Mobile number"
+          aria-invalid={Boolean(error)}
+          value={value}
+          onChange={onChange}
+          className="min-w-0 flex-1 bg-transparent px-3.5 py-3 text-[15px] outline-none placeholder:text-[var(--faint)]"
+        />
+      </div>
+      {error && <span className="mt-1 block text-[12px] text-rose-500">{error}</span>}
+    </div>
   );
 }
