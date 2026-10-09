@@ -192,9 +192,8 @@ export default function Navbar({ themeToggle = true }) {
   return (
     <header
       data-theme={theme}
-      className={`site-theme sticky top-0 z-50 text-white transition-colors duration-300 ${
-        scrolled ? 'bg-[#0b0a10]/85 backdrop-blur-xl border-b border-white/[0.06]' : 'bg-[#0b0a10] border-b border-transparent'
-      }`}
+      className={`site-theme sticky top-0 z-50 text-white transition-colors duration-300 ${scrolled ? 'bg-[#0b0a10]/85 backdrop-blur-xl border-b border-white/[0.06]' : 'bg-[#0b0a10] border-b border-transparent'
+        }`}
     >
       <div className="mx-auto flex h-16 max-w-[1240px] items-center justify-between px-5 lg:px-8">
         <Link to="/" className="flex items-center text-white shrink-0" aria-label="CoCo home">
@@ -211,9 +210,8 @@ export default function Navbar({ themeToggle = true }) {
                   onFocus={() => show(menu.key)}
                   onClick={() => (open === menu.key ? setOpen(null) : show(menu.key))}
                   aria-expanded={open === menu.key}
-                  className={`flex items-center gap-1 rounded-lg px-3 py-2 text-[14px] font-medium transition-colors ${
-                    open === menu.key ? 'bg-white/[0.07] text-white' : 'text-white/75 hover:text-white'
-                  }`}
+                  className={`flex items-center gap-1 rounded-lg px-3 py-2 text-[14px] font-medium transition-colors ${open === menu.key ? 'bg-white/[0.07] text-white' : 'text-white/75 hover:text-white'
+                    }`}
                 >
                   {menu.label}
                   <ChevronDown size={14} className={`text-white/40 transition-transform duration-300 ${open === menu.key ? 'rotate-180' : ''}`} />
@@ -279,10 +277,10 @@ export default function Navbar({ themeToggle = true }) {
 
         <div className="flex items-center gap-1.5 lg:hidden">
           {themeToggle && <ThemeToggle />}
-          <Link to="/dashboard" className="hidden sm:inline-flex rounded-lg px-3 py-2 text-[14px] font-medium text-white/80 hover:text-white">
+          <Link to="/dashboard" className="hidden rounded-lg px-3 py-2 text-[14px] font-medium text-white/80 hover:text-white">
             Sign in
           </Link>
-          <a href="/#cta" className="hidden sm:inline-flex rounded-lg bg-coco-purple px-3.5 py-2 text-[14px] font-semibold text-white hover:bg-[#ad1fff] transition-colors">
+          <a href="/#cta" className="hidden rounded-lg bg-coco-purple px-3.5 py-2 text-[14px] font-semibold text-white hover:bg-[#ad1fff] transition-colors">
             Book a demo
           </a>
           <button

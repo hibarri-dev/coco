@@ -49,4 +49,10 @@ export default defineConfig({
     tailwindcss(),
     devApi(),
   ],
+  build: {
+    // Vite's default JS target (iOS 16.4) can leave a blank page on older iPhones.
+    target: ['es2020', 'safari15', 'ios15'],
+    // Kept at Vite's default so the generated CSS (and the design) stays exactly as it was.
+    cssTarget: ['chrome111', 'edge111', 'firefox114', 'safari16.4', 'ios16.4'],
+  },
 })
