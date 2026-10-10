@@ -51,8 +51,8 @@ const MODELS = [
     vcpu: 128,
     ram: '1 x 64GB TruDDR5 6400MHz (2Rx4) RDIMM',
     power: 'ThinkSystem 1300W 230V/115V Platinum CRPS Hot-Swap Power Supply v2.4',
-    monthlyYield: '~2113',
-    basePrice: 11990,
+    monthlyYield: 'Yielding $1,113 per month on average',
+    basePrice: 9990,
   },
   {
     id: 'sr650x4',
@@ -62,8 +62,8 @@ const MODELS = [
     vcpu: 128,
     ram: '256GB via 4 x 64GB TruDDR5 6400MHz (2Rx4) RDIMM',
     power: 'ThinkSystem 1300W 230V/115V Platinum CRPS Hot-Swap Power Supply v2.4',
-    monthlyYield: '~8452',
-    basePrice: 24970,
+    monthlyYield: 'Yielding $4,452 per month on average',
+    basePrice: 22970,
   },
   {
     id: 'sr650ai',
@@ -76,8 +76,8 @@ const MODELS = [
     ram: '512GB via 16 x 32GB TruDDR5 6400MHz (1Rx4) RDIMM',
     storage: '3.84TB NVMe PCIe 5.0 x4 HS SSD',
     power: '2× 3200W 230V Titanium CRPS Premium Hot-Swap Power Supply',
-    monthlyYield: '~16232',
-    basePrice: 109950,
+    monthlyYield: 'Yielding $16,232 per month on average',
+    basePrice: 102950,
   },
 ];
 
