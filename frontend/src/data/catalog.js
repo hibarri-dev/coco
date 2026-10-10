@@ -4,9 +4,9 @@ const DEDICATED = 'Dedicated Datacenters';
 const RADIUS = 'Radius DC';
 const I3D = 'i3D';
 const US = { country: 'US', countryName: 'United States', supplier: 'Lenovo US', factor: 1, unavailable: [] };
-const NE = { country: 'NE', countryName: 'Netherlands', supplier: 'Dell Technologies EU', factor: 1, unavailable [] };
-const FR = { country: 'FR', countryName: 'France', supplier: 'Dell Technologies EU', factor: 1, unavailable [] };
-const CA = { country: 'CA', countryName: 'Canada', supplier: 'Lenovo US', factor: 1, unavailable [] };
+const NE = { country: 'NE', countryName: 'Netherlands', supplier: 'Dell Technologies EU', factor: 1, unavailable: [] };
+const FR = { country: 'FR', countryName: 'France', supplier: 'Dell Technologies EU', factor: 1, unavailable: [] };
+const CA = { country: 'CA', countryName: 'Canada', supplier: 'Lenovo US', factor: 1, unavailable: [] };
 
 // Partner data centers. `factor` adjusts the sample supplier price per country.
 export const LOCATIONS = [
