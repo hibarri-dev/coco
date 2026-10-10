@@ -243,7 +243,7 @@ export default function LoadBalancing() {
           One cloud, <span className="text-purple-glow">hundreds of servers</span>
         </h2>
         <p className="mt-5 text-[17px] leading-relaxed text-[var(--muted)]">
-          Hundreds of private servers receive workload from the central cloud, based on individual server capabilities.
+          Hundreds of private servers receive fairly distributed workload from the central cloud, based on individual server capabilities.
         </p>
       </Reveal>
 
