@@ -66,7 +66,7 @@ function ServerCard({ model, selected, onSelect }) {
       <ul className="mt-3 space-y-1.5 text-[12.5px] text-[var(--muted)]">
         <li className="flex items-start gap-2"><Cpu size={13} className="mt-0.5 shrink-0 text-coco-violet" />{model.cpu}</li>
         <li className="flex items-start gap-2"><MemoryStick size={13} className="mt-0.5 shrink-0 text-coco-violet" />{model.ram}</li>
-        <li className="flex items-start gap-2"><HardDrive size={13} className="mt-0.5 shrink-0 text-coco-violet" />{model.storage}</li>
+        <li className="flex items-start gap-2"><HardDrive size={13} className="mt-0.5 shrink-0 text-coco-violet" />{model.vcpu}</li>
         <li className="flex items-start gap-2"><Network size={13} className="mt-0.5 shrink-0 text-coco-violet" />{model.monthlyYield}</li>
       </ul>
       <div className="mt-auto flex items-end justify-between gap-2 pt-4">
