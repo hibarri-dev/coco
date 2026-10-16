@@ -1,6 +1,7 @@
 {
   "rewrites": [
-    { "source": "/((?!api/|assets/).*)", "destination": "/index.html" }
+    { "source": "/sitemap.xml", "destination": "https://api.hibarri.com/coco/sitemap.xml" },
+    { "source": "/((?!api/|assets/|robots\\.txt|sitemap\\.xml).*)", "destination": "/index.html" }
   ],
   "headers": [
     {
