@@ -1,0 +1,2429 @@
+openapi: 3.0.3
+info:
+  title: CoCo Cloud Backend API
+  description: |
+    Enterprise API specification for the **CoCo Cloud** platform by Hibarri.
+    
+    ### Architectural Context & Hibarri Dashboard Integration
+    CoCo operates as a hybrid cloud compute and hardware tokenization engine with direct cross-system links to the **Hibarri Central Dashboard**:
+    
+    1. **Inbound Server-to-Server Proxy (`/api/admin/*`)**:
+       - The Hibarri Superadmin Dashboard connects to CoCo backend administrative endpoints using machine-to-machine authentication.
+       - Authenticated via the header `X-Internal-Key: <COCO_INTERNAL_KEY>`.
+       - The Hibarri proxy optionally passes `X-Admin-Email: <email>` to tag audit trails with the actual human superadmin's email.
+       - Alternatively, direct browser sessions authenticate with a valid JWT cookie or Bearer token where `role === 'admin'`.
+       
+    2. **Outbound Lead Forwarding (`process.env.LEADS_ENDPOINT`)**:
+       - CoCo relays marketing funnel submissions from `/api/coco/leads` to the Hibarri Central API (`https://api.hibarri.com/api/coco/leads`).
+       - Successful Stripe server purchases (`checkout.session.completed`) automatically forward buyer details, datacenter, and order metadata to `LEADS_ENDPOINT` for aggregation in Hibarri Superadmin > Coco > Forms.
+       
+    3. **Developer Compute Metering (`POST /api/dev/usage/ingest`)**:
+       - Dedicated runtime orchestrators ingest raw hardware metrics using `X-Meter-Key: <METER_INGEST_KEY>`.
+       
+    4. **Distributor Catalogs**:
+       - Hardware store endpoints query live pricing and inventory from **Ingram Micro Xvantage**, with fallback to **TD SYNNEX**.
+  version: 1.0.0
+  contact:
+    name: Hibarri Engineering Team
+    email: coco@hibarri.com
+    url: https://coco.hibarri.com
+
+servers:
+  - url: http://localhost:5001
+    description: Local Development Server
+  - url: https://api.coco.hibarri.com
+    description: Production Environment
+
+tags:
+  - name: Health & System
+    description: Health check, heartbeat, and runtime diagnostics
+  - name: Hibarri Integration
+    description: Direct bridge and relay endpoints between CoCo and Hibarri Central Dashboard
+  - name: Authentication
+    description: User and investor sign-up, login, token refresh, and profile inspection
+  - name: Checkout & Payments
+    description: Stripe checkout sessions and wire transfer workflows for server purchases
+  - name: Orders
+    description: Customer order history, hardware allocations, and payment tracking
+  - name: Servers & Portfolio
+    description: Investor hardware assets, real-time compute telemetry, and disconnect workflows
+  - name: Store Catalog
+    description: Hardware store catalog powered by Ingram Micro Xvantage and TD SYNNEX
+  - name: Developer Cloud
+    description: Compute engine projects, microservices, container deployments, and telemetry
+  - name: Developer Billing & Credits
+    description: Prepaid compute credits top-up, ledger history, and Stripe subscriptions
+  - name: Admin Management
+    description: Administrative operations accessed via CoCo Admin JWT or Hibarri Dashboard proxy (X-Internal-Key)
+  - name: Admin Billing & Payouts
+    description: Credit adjustments, weekly host server payout settlements, and disbursement approvals
+  - name: Transactional Email
+    description: Event calendar invites (ICS) and whitepaper distribution via SMTP
+  - name: Webhooks
+    description: Inbound Stripe webhook dispatcher with automatic Hibarri lead forwarding
+
+paths:
+  /api/health:
+    get:
+      tags:
+        - Health & System
+      summary: Health check & service heartbeat
+      description: Returns service status, node app identifier, and current UTC timestamp.
+      responses:
+        200:
+          description: Service is healthy and responsive
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  app:
+                    type: string
+                    example: coco-cloud-backend
+                  timestamp:
+                    type: string
+                    format: date-time
+                    example: '2026-10-16T12:00:00.000Z'
+
+  /api/coco/leads:
+    post:
+      tags:
+        - Hibarri Integration
+      summary: Relay funnel leads to Hibarri Central Dashboard
+      description: |
+        Receives leads submitted by older marketing funnel builds and forwards them directly to the upstream Hibarri API configured in `LEADS_ENDPOINT` (`https://api.hibarri.com/api/coco/leads`).
+        
+        **Implementation Note:** Accepts `text/plain` payloads to bypass browser CORS preflight requests from legacy landing pages.
+      requestBody:
+        required: true
+        content:
+          text/plain:
+            schema:
+              type: string
+              example: '{"name":"Alex Mercer","email":"alex@example.com","phone":"+15550199","source":"funnel"}'
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        200:
+          description: Lead successfully relayed to Hibarri Central Dashboard
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+        502:
+          description: Upstream relay to Hibarri Central failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        503:
+          description: LEADS_ENDPOINT environment variable is not configured
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: Register a new account
+      description: Registers a user or investor account and sets the `coco_token` HttpOnly cookie.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        201:
+          description: Registration successful
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+                example: coco_token=jwt_token_here; Path=/; HttpOnly; SameSite=Lax
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        400:
+          description: Missing or invalid fields
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        409:
+          description: Email already registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: Sign in with email and password
+      description: Authenticates user credentials and sets the `coco_token` HttpOnly authentication cookie.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        200:
+          description: Login successful
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+                example: coco_token=jwt_token_here; Path=/; HttpOnly; SameSite=Lax
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        400:
+          description: Missing email or password
+        401:
+          description: Invalid email or password
+        403:
+          description: Account inactive or suspended
+
+  /api/auth/investor/register:
+    post:
+      tags:
+        - Authentication
+      summary: Register investor account
+      description: Convenience endpoint that forces `role: 'investor'` upon signup.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        201:
+          description: Investor registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+
+  /api/auth/investor/login:
+    post:
+      tags:
+        - Authentication
+      summary: Investor sign in
+      description: Dedicated investor login route.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        200:
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+
+  /api/auth/me:
+    get:
+      tags:
+        - Authentication
+      summary: Get current authenticated user profile
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      responses:
+        200:
+          description: Authenticated user details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  user:
+                    $ref: '#/components/schemas/PublicUser'
+        401:
+          description: Unauthorized
+
+  /api/auth/logout:
+    post:
+      tags:
+        - Authentication
+      summary: Log out current user
+      description: Clears the `coco_token` HttpOnly session cookie.
+      responses:
+        200:
+          description: Successfully logged out
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+
+  /api/checkout:
+    post:
+      tags:
+        - Checkout & Payments
+      summary: Create Stripe checkout session for server purchase
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckoutSessionRequest'
+      responses:
+        200:
+          description: Stripe checkout session initialized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  url:
+                    type: string
+                    format: uri
+                    example: https://checkout.stripe.com/c/pay/cs_test_a1b2c3d4
+                  reference:
+                    type: string
+                    example: COCO-A8F29C14
+        400:
+          description: Amount exceeds payment ceiling or invalid input
+        502:
+          description: Stripe API communication error
+        503:
+          description: Stripe not configured
+    get:
+      tags:
+        - Checkout & Payments
+      summary: Retrieve checkout session payment status
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: session_id
+          in: query
+          required: true
+          schema:
+            type: string
+            example: cs_test_a1b2c3d4e5f6
+      responses:
+        200:
+          description: Payment status details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckoutStatusResponse'
+
+  /api/checkout/create-session:
+    post:
+      tags:
+        - Checkout & Payments
+      summary: Alias for POST /api/checkout
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckoutSessionRequest'
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  url:
+                    type: string
+                  reference:
+                    type: string
+
+  /api/checkout/session/{sessionId}:
+    get:
+      tags:
+        - Checkout & Payments
+      summary: Retrieve checkout session status by ID in path
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckoutStatusResponse'
+
+  /api/checkout/wire:
+    post:
+      tags:
+        - Checkout & Payments
+      summary: Create wire transfer order
+      description: Generates an order in `awaiting` payment status for wire payment. Needs confirmation via Admin Mark-Paid.
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckoutSessionRequest'
+      responses:
+        201:
+          description: Wire order registered
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  order:
+                    $ref: '#/components/schemas/PublicOrder'
+
+  /api/orders:
+    get:
+      tags:
+        - Orders
+      summary: List user's order history
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      responses:
+        200:
+          description: List of user orders
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  count:
+                    type: integer
+                  orders:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PublicOrder'
+
+  /api/orders/{reference}:
+    get:
+      tags:
+        - Orders
+      summary: Get order details by reference code
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: reference
+          in: path
+          required: true
+          schema:
+            type: string
+            example: COCO-A8F29C14
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  order:
+                    $ref: '#/components/schemas/PublicOrder'
+        404:
+          description: Order not found
+
+  /api/servers:
+    get:
+      tags:
+        - Servers & Portfolio
+      summary: List user's provisioned hardware servers
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  count:
+                    type: integer
+                  servers:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ServerView'
+
+  /api/servers/portfolio:
+    get:
+      tags:
+        - Servers & Portfolio
+      summary: Get comprehensive investor portfolio summary
+      description: Returns aggregate compute capacity, compute sold, monthly revenue trend, payout forecasts, and order stats.
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  portfolio:
+                    $ref: '#/components/schemas/PortfolioSummary'
+
+  /api/servers/{id}:
+    get:
+      tags:
+        - Servers & Portfolio
+      summary: Get server telemetry by serial number
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Server serial number
+          schema:
+            type: string
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  server:
+                    $ref: '#/components/schemas/ServerView'
+        404:
+          description: Server not found
+
+  /api/servers/{id}/disconnect-request:
+    post:
+      tags:
+        - Servers & Portfolio
+      summary: Request server disconnection / offboarding
+      description: Marks the server with a disconnect request timestamp and notifies operations to migrate workloads.
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  server:
+                    $ref: '#/components/schemas/ServerView'
+
+  /api/store/products:
+    get:
+      tags:
+        - Store Catalog
+      summary: Search distributor hardware catalog
+      description: Fetches live server hardware inventory from Ingram Micro Xvantage, with automatic failover to TD SYNNEX API.
+      parameters:
+        - name: q
+          in: query
+          schema:
+            type: string
+            example: poweredge
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+            maximum: 50
+      responses:
+        200:
+          description: Catalog search results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  products:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/StoreProduct'
+                  page:
+                    type: integer
+                  total:
+                    type: integer
+                  source:
+                    type: string
+                    example: ingram
+
+  /api/store/products/{id}:
+    get:
+      tags:
+        - Store Catalog
+      summary: Get store product details by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  product:
+                    $ref: '#/components/schemas/StoreProduct'
+        404:
+          description: Product not found
+
+  /api/dev/usage/ingest:
+    post:
+      tags:
+        - Developer Cloud
+      summary: Ingest runtime compute usage metrics
+      description: |
+        Called by container orchestrator runtime nodes to ingest CPU, memory, and runtime seconds per service.
+        
+        **Authentication:** Requires the `X-Meter-Key` header matching `process.env.METER_INGEST_KEY`. Does not use user JWT.
+      security:
+        - meterKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                samples:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - serviceId
+                      - vcpuSec
+                      - memGbSec
+                    properties:
+                      serviceId:
+                        type: string
+                      vcpuSec:
+                        type: number
+                      memGbSec:
+                        type: number
+                      hour:
+                        type: string
+                        format: date-time
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  stored:
+                    type: integer
+                    example: 24
+        401:
+          description: Invalid or missing meter key
+
+  /api/dev/overview:
+    get:
+      tags:
+        - Developer Cloud
+      summary: Developer dashboard overview
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  projects:
+                    type: integer
+                  services:
+                    type: integer
+                  activeServices:
+                    type: integer
+                  billing:
+                    $ref: '#/components/schemas/BillingSummary'
+                  recentDeployments:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Deployment'
+
+  /api/dev/projects:
+    get:
+      tags:
+        - Developer Cloud
+      summary: List user developer projects
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  projects:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Project'
+    post:
+      tags:
+        - Developer Cloud
+      summary: Create developer project
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                  example: AI Inference API
+                region:
+                  type: string
+                  enum: [us-east, us-west, eu-central, ap-southeast]
+                  default: us-east
+      responses:
+        201:
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  project:
+                    $ref: '#/components/schemas/Project'
+
+  /api/dev/projects/{id}:
+    get:
+      tags:
+        - Developer Cloud
+      summary: Get project details and child services
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  project:
+                    $ref: '#/components/schemas/Project'
+                  services:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Service'
+    patch:
+      tags:
+        - Developer Cloud
+      summary: Update project name or region
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                region:
+                  type: string
+                  enum: [us-east, us-west, eu-central, ap-southeast]
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  project:
+                    $ref: '#/components/schemas/Project'
+    delete:
+      tags:
+        - Developer Cloud
+      summary: Delete project and cascade terminate services
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+
+  /api/dev/services:
+    post:
+      tags:
+        - Developer Cloud
+      summary: Create service in project
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - projectId
+                - name
+              properties:
+                projectId:
+                  type: string
+                name:
+                  type: string
+                type:
+                  type: string
+                  enum: [web, worker, db, cron]
+                  default: web
+                source:
+                  type: string
+                  example: github.com/org/repo
+                vcpu:
+                  type: number
+                  default: 1
+                memoryGb:
+                  type: number
+                  default: 1
+                replicas:
+                  type: integer
+                  default: 1
+      responses:
+        201:
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  service:
+                    $ref: '#/components/schemas/Service'
+
+  /api/dev/services/{id}:
+    get:
+      tags:
+        - Developer Cloud
+      summary: Get service details, deployments, and 24h metrics
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  service:
+                    $ref: '#/components/schemas/Service'
+                  deployments:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Deployment'
+                  metrics:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        hour:
+                          type: string
+                          format: date-time
+                        vcpu:
+                          type: number
+                        memoryGb:
+                          type: number
+                        costCents:
+                          type: number
+    patch:
+      tags:
+        - Developer Cloud
+      summary: Update service resource allocations or source
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                source:
+                  type: string
+                vcpu:
+                  type: number
+                memoryGb:
+                  type: number
+                replicas:
+                  type: integer
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  service:
+                    $ref: '#/components/schemas/Service'
+    delete:
+      tags:
+        - Developer Cloud
+      summary: Delete service and release server compute
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+
+  /api/dev/services/{id}/deploy:
+    post:
+      tags:
+        - Developer Cloud
+      summary: Trigger new deployment
+      description: Validates account compute balance/subscription and schedules placement on optimal host server.
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                commit:
+                  type: string
+                  example: 7a8b9c0
+      responses:
+        202:
+          description: Deployment initiated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deployment:
+                    $ref: '#/components/schemas/Deployment'
+        402:
+          description: Compute credits depleted or no active subscription
+
+  /api/dev/services/{id}/stop:
+    post:
+      tags:
+        - Developer Cloud
+      summary: Stop running service
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  service:
+                    $ref: '#/components/schemas/Service'
+
+  /api/dev/deployments/{id}:
+    get:
+      tags:
+        - Developer Cloud
+      summary: Get deployment build and runtime logs
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deployment:
+                    $ref: '#/components/schemas/DeploymentWithLogs'
+
+  /api/dev/usage:
+    get:
+      tags:
+        - Developer Cloud
+      summary: Query historical compute usage series
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: range
+          in: query
+          schema:
+            type: string
+            enum: ['7d', '30d', '90d']
+            default: '30d'
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  days:
+                    type: integer
+                  series:
+                    type: array
+                    items:
+                      type: object
+
+  /api/dev/billing:
+    get:
+      tags:
+        - Developer Billing & Credits
+      summary: Developer billing and spend summary
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BillingSummary'
+
+  /api/dev/billing/subscribe:
+    post:
+      tags:
+        - Developer Billing & Credits
+      summary: Create Stripe subscription checkout session
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - tier
+              properties:
+                tier:
+                  type: string
+                  enum: [hobby, pro]
+                  example: hobby
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  url:
+                    type: string
+
+  /api/dev/billing/portal:
+    post:
+      tags:
+        - Developer Billing & Credits
+      summary: Create Stripe Customer Portal session
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  url:
+                    type: string
+
+  /api/dev/credits/topup:
+    post:
+      tags:
+        - Developer Billing & Credits
+      summary: Create Stripe checkout session for prepaid compute credits
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - amountCents
+              properties:
+                amountCents:
+                  type: integer
+                  minimum: 2000
+                  description: Topup amount in USD cents (minimum $20 = 2000 cents)
+                  example: 5000
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  url:
+                    type: string
+
+  /api/dev/credits/ledger:
+    get:
+      tags:
+        - Developer Billing & Credits
+      summary: Get user credit ledger transactions
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  entries:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CreditLedgerEntry'
+
+  /api/admin/orders:
+    get:
+      tags:
+        - Admin Management
+      summary: List all orders across platform
+      description: |
+        Called by CoCo Admins or Hibarri Superadmin via proxy.
+      security:
+        - bearerAuth: []
+        - internalKeyAuth: []
+          adminEmailHeader: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [awaiting, processing, paid, cancelled, review]
+        - name: method
+          in: query
+          schema:
+            type: string
+            enum: [card, wire]
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  count:
+                    type: integer
+                  orders:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AdminOrderView'
+
+  /api/admin/orders/{reference}/mark-paid:
+    post:
+      tags:
+        - Admin Management
+      summary: Confirm wire payment & provision hardware
+      description: Marks order paid, provisions server records, and initiates datacenter colocation workflows.
+      security:
+        - bearerAuth: []
+        - internalKeyAuth: []
+          adminEmailHeader: []
+      parameters:
+        - name: reference
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                note:
+                  type: string
+                  example: Wire cleared via Chase Bank ref #998822
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  order:
+                    $ref: '#/components/schemas/AdminOrderView'
+                  servers:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ServerView'
+
+  /api/admin/orders/{reference}/cancel:
+    post:
+      tags:
+        - Admin Management
+      summary: Cancel unpaid order
+      security:
+        - bearerAuth: []
+        - internalKeyAuth: []
+          adminEmailHeader: []
+      parameters:
+        - name: reference
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  example: Buyer requested cancellation prior to wire
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  order:
+                    $ref: '#/components/schemas/AdminOrderView'
+
+  /api/admin/orders/{reference}/assign:
+    post:
+      tags:
+        - Admin Management
+      summary: Link anonymous/legacy order to user account
+      security:
+        - bearerAuth: []
+        - internalKeyAuth: []
+          adminEmailHeader: []
+      parameters:
+        - name: reference
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: investor@example.com
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  order:
+                    $ref: '#/components/schemas/AdminOrderView'
+
+  /api/admin/servers:
+    get:
+      tags:
+        - Admin Management
+      summary: List all hardware servers
+      security:
+        - bearerAuth: []
+        - internalKeyAuth: []
+          adminEmailHeader: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: ['Pending Provisioning', 'Online', 'Maintenance', 'Offline', 'Decommissioned']
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  count:
+                    type: integer
+                  servers:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AdminServerView'
+
+  /api/admin/servers/{serial}:
+    patch:
+      tags:
+        - Admin Management
+      summary: Update server metrics, status, costs, and alerts
+      security:
+        - bearerAuth: []
+        - internalKeyAuth: []
+          adminEmailHeader: []
+      parameters:
+        - name: serial
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateServerRequest'
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  server:
+                    $ref: '#/components/schemas/ServerView'
+
+  /api/admin/users:
+    get:
+      tags:
+        - Admin Management
+      summary: List user accounts
+      security:
+        - bearerAuth: []
+        - internalKeyAuth: []
+          adminEmailHeader: []
+      parameters:
+        - name: role
+          in: query
+          schema:
+            type: string
+            enum: [user, investor, admin]
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  count:
+                    type: integer
+                  users:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AdminUserView'
+
+  /api/admin/credits:
+    get:
+      tags:
+        - Admin Billing & Payouts
+      summary: List funded developer balances
+      security:
+        - bearerAuth: []
+        - internalKeyAuth: []
+          adminEmailHeader: []
+      parameters:
+        - name: q
+          in: query
+          description: Search by name or email
+          schema:
+            type: string
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  users:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CreditUserView'
+
+  /api/admin/credits/{userId}/ledger:
+    get:
+      tags:
+        - Admin Billing & Payouts
+      summary: View developer credit ledger
+      security:
+        - bearerAuth: []
+        - internalKeyAuth: []
+          adminEmailHeader: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  user:
+                    $ref: '#/components/schemas/CreditUserView'
+                  entries:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CreditLedgerEntry'
+
+  /api/admin/credits/{userId}/adjust:
+    post:
+      tags:
+        - Admin Billing & Payouts
+      summary: Adjust developer compute credit balance
+      description: Adds or deducts compute balance (up to ±$10,000 = 1,000,000 cents). Automatically lifts or sets suspension.
+      security:
+        - bearerAuth: []
+        - internalKeyAuth: []
+          adminEmailHeader: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - amountCents
+                - note
+              properties:
+                amountCents:
+                  type: integer
+                  example: 5000
+                note:
+                  type: string
+                  example: Promo credit granted for hackathon
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  balanceCents:
+                    type: integer
+                  fundedCents:
+                    type: integer
+
+  /api/admin/payouts:
+    get:
+      tags:
+        - Admin Billing & Payouts
+      summary: List weekly server host payouts
+      security:
+        - bearerAuth: []
+        - internalKeyAuth: []
+          adminEmailHeader: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, held, paid]
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payouts:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PayoutView'
+                  owedCents:
+                    type: integer
+                  paidCents:
+                    type: integer
+
+  /api/admin/payouts/settle:
+    post:
+      tags:
+        - Admin Billing & Payouts
+      summary: Manually trigger weekly payout settlement
+      security:
+        - bearerAuth: []
+        - internalKeyAuth: []
+          adminEmailHeader: []
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  settled:
+                    type: integer
+                    description: Number of payout records created/settled
+        409:
+          description: Settlement job is currently running
+
+  /api/admin/payouts/{id}/{action}:
+    post:
+      tags:
+        - Admin Billing & Payouts
+      summary: Approve, hold, or release weekly payout
+      security:
+        - bearerAuth: []
+        - internalKeyAuth: []
+          adminEmailHeader: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: action
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [mark-paid, hold, release]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reference:
+                  type: string
+                  description: Bank transfer transaction reference (required when action=mark-paid)
+                  example: ACH-WIRE-992144
+                note:
+                  type: string
+                  example: Processed via Wise Business
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payout:
+                    $ref: '#/components/schemas/PayoutView'
+
+  /api/email:
+    post:
+      tags:
+        - Transactional Email
+      summary: Send transactional notification email
+      description: |
+        Dispatches emails via SMTP.
+        - `broadcast-registration`: Generates and attaches an RFC 5545 `.ics` calendar file for the live broadcast.
+        - `whitepaper`: Delivers download link for the White Paper on Compute.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendEmailRequest'
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sent:
+                    type: boolean
+                    example: true
+        400:
+          description: Invalid email, template, or schedule
+        502:
+          description: SMTP delivery failed
+        503:
+          description: SMTP mailer not configured
+
+  /api/webhook/stripe:
+    post:
+      tags:
+        - Webhooks
+      summary: Stripe webhook listener
+      description: |
+        Handles asynchronous Stripe events using raw JSON body verification.
+        
+        **Hibarri Integration:**
+        On `checkout.session.completed` for paid server purchases, automatically executes `fulfillOrder()` and forwards the full lead payload to `process.env.LEADS_ENDPOINT` (`https://api.hibarri.com/api/coco/leads`).
+      security:
+        - stripeSignature: []
+      requestBody:
+        required: true
+        description: Raw JSON webhook payload directly from Stripe
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  received:
+                    type: boolean
+                    example: true
+                  ignored:
+                    type: boolean
+                    example: false
+        400:
+          description: Invalid Stripe webhook signature
+        500:
+          description: Webhook handler processing failure (triggers Stripe retry)
+        503:
+          description: Stripe webhook secret not configured
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JSON Web Token passed in Authorization header `Bearer <token>`
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: coco_token
+      description: HttpOnly JWT cookie set automatically upon login or registration
+    internalKeyAuth:
+      type: apiKey
+      in: header
+      name: X-Internal-Key
+      description: Shared server-to-server secret (`COCO_INTERNAL_KEY`) used exclusively by the Hibarri Central Dashboard backend proxy
+    adminEmailHeader:
+      type: apiKey
+      in: header
+      name: X-Admin-Email
+      description: Audit header passed by Hibarri proxy to record the email of the superadmin performing the action
+    meterKeyAuth:
+      type: apiKey
+      in: header
+      name: X-Meter-Key
+      description: Shared secret (`METER_INGEST_KEY`) used by compute runtimes to submit hardware telemetry
+    stripeSignature:
+      type: apiKey
+      in: header
+      name: Stripe-Signature
+      description: Stripe cryptographic signature for validating webhook authenticity
+
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          example: invalid_request
+        message:
+          type: string
+          example: Some fields are invalid
+
+    PublicUser:
+      type: object
+      properties:
+        id:
+          type: string
+          example: 660f1b2c3d4e5f6a7b8c9d0e
+        name:
+          type: string
+          example: John Doe
+        email:
+          type: string
+          format: email
+          example: john@example.com
+        role:
+          type: string
+          enum: [user, investor, admin]
+          example: user
+        phone:
+          type: string
+          example: '+15551234567'
+        company:
+          type: string
+          example: Acme Corp
+        status:
+          type: string
+          enum: [active, suspended]
+          example: active
+        createdAt:
+          type: string
+          format: date-time
+
+    RegisterRequest:
+      type: object
+      required:
+        - name
+        - email
+        - password
+      properties:
+        name:
+          type: string
+          example: Jane Doe
+        email:
+          type: string
+          format: email
+          example: jane@example.com
+        password:
+          type: string
+          format: password
+          minLength: 8
+          example: SecurePass123!
+        role:
+          type: string
+          enum: [user, investor]
+          default: user
+        phone:
+          type: string
+          example: '+15559876543'
+        company:
+          type: string
+          example: Horizon Cloud Inc
+
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          example: jane@example.com
+        password:
+          type: string
+          format: password
+          example: SecurePass123!
+
+    AuthResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        user:
+          $ref: '#/components/schemas/PublicUser'
+
+    CheckoutSessionRequest:
+      type: object
+      required:
+        - selection
+        - customer
+      properties:
+        selection:
+          type: object
+          required:
+            - location
+            - model
+            - pkg
+          properties:
+            location:
+              type: string
+              example: ashburn-va
+            model:
+              type: string
+              example: dell-r760-h100
+            pkg:
+              type: string
+              enum: [starter, growth, scale, enterprise]
+              example: starter
+        customer:
+          type: object
+          properties:
+            name:
+              type: string
+              example: Jane Doe
+            email:
+              type: string
+              format: email
+              example: jane@example.com
+            phone:
+              type: string
+              example: '+15559876543'
+            company:
+              type: string
+              example: Cloud Partners LLC
+        returnPath:
+          type: string
+          enum: ['/checkout', '/live/checkout']
+          default: '/checkout'
+
+    CheckoutStatusResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [paid, processing, unpaid]
+        reference:
+          type: string
+          example: COCO-A8F29C14
+        email:
+          type: string
+          format: email
+        amount:
+          type: number
+          example: 12500
+        order:
+          $ref: '#/components/schemas/PublicOrder'
+
+    PublicOrder:
+      type: object
+      properties:
+        reference:
+          type: string
+          example: COCO-A8F29C14
+        paymentMethod:
+          type: string
+          enum: [card, wire]
+        paymentStatus:
+          type: string
+          enum: [awaiting, processing, paid, cancelled, review]
+        quote:
+          type: object
+          properties:
+            total:
+              type: number
+            subtotal:
+              type: number
+            shipping:
+              type: number
+        package:
+          type: string
+        location:
+          type: object
+        model:
+          type: object
+        quantity:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        provisionedAt:
+          type: string
+          format: date-time
+
+    AdminOrderView:
+      allOf:
+        - $ref: '#/components/schemas/PublicOrder'
+        - type: object
+          properties:
+            id:
+              type: string
+            amountCents:
+              type: integer
+            stripeSessionId:
+              type: string
+            stripePaymentIntentId:
+              type: string
+            metadata:
+              type: object
+            owner:
+              type: object
+              properties:
+                id:
+                  type: string
+                name:
+                  type: string
+                email:
+                  type: string
+                role:
+                  type: string
+
+    ServerView:
+      type: object
+      properties:
+        serial:
+          type: string
+          example: COCO-SRV-90214
+        model:
+          type: string
+          example: Dell PowerEdge R760
+        status:
+          type: string
+          enum: ['Pending Provisioning', 'Online', 'Maintenance', 'Offline', 'Decommissioned']
+        location:
+          type: string
+          example: Ashburn, VA (Equinix DC11)
+        cores:
+          type: integer
+          example: 64
+        vcpu:
+          type: integer
+          example: 128
+        ramGb:
+          type: integer
+          example: 512
+        storageTb:
+          type: number
+          example: 15.36
+        cpuUtil:
+          type: number
+          example: 45
+        ramUtil:
+          type: number
+          example: 62
+        revenue:
+          type: number
+          example: 1450
+        revenueToDate:
+          type: number
+          example: 8700
+        customers:
+          type: integer
+          example: 18
+        alerts:
+          type: array
+          items:
+            type: object
+            properties:
+              level:
+                type: string
+                enum: [info, warning, critical]
+              title:
+                type: string
+              detail:
+                type: string
+              time:
+                type: string
+                format: date-time
+        history:
+          type: array
+          items:
+            type: object
+            properties:
+              m:
+                type: string
+                example: Oct
+              v:
+                type: number
+                example: 1450
+
+    AdminServerView:
+      allOf:
+        - $ref: '#/components/schemas/ServerView'
+        - type: object
+          properties:
+            owner:
+              type: object
+              properties:
+                id:
+                  type: string
+                name:
+                  type: string
+                email:
+                  type: string
+
+    UpdateServerRequest:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: ['Pending Provisioning', 'Online', 'Maintenance', 'Offline', 'Decommissioned']
+        statusNote:
+          type: string
+        cpuUtil:
+          type: number
+          minimum: 0
+          maximum: 100
+        ramUtil:
+          type: number
+          minimum: 0
+          maximum: 100
+        storageUtil:
+          type: number
+          minimum: 0
+          maximum: 100
+        networkUtil:
+          type: number
+          minimum: 0
+          maximum: 100
+        gpuUtil:
+          type: number
+          nullable: true
+        uptime:
+          type: number
+          minimum: 0
+          maximum: 100
+        customers:
+          type: integer
+          minimum: 0
+        allocatedVcpu:
+          type: integer
+          minimum: 0
+        allocatedRamGb:
+          type: integer
+          minimum: 0
+        revenue:
+          type: number
+          minimum: 0
+        revenueToDate:
+          type: number
+          minimum: 0
+        dcCosts:
+          type: object
+          properties:
+            colocation:
+              type: number
+            power:
+              type: number
+            crossConnect:
+              type: number
+            remoteHands:
+              type: number
+        load:
+          type: array
+          maxItems: 48
+          items:
+            type: number
+        alert:
+          type: object
+          properties:
+            level:
+              type: string
+              enum: [info, warning, critical]
+            title:
+              type: string
+            detail:
+              type: string
+
+    PortfolioSummary:
+      type: object
+      properties:
+        totalServers:
+          type: integer
+        activeServers:
+          type: integer
+        pendingServers:
+          type: integer
+        locations:
+          type: array
+          items:
+            type: string
+        availableCompute:
+          type: integer
+        computeSold:
+          type: integer
+        utilization:
+          type: number
+        activeCustomers:
+          type: integer
+        thisMonthRevenue:
+          type: number
+        lastMonthRevenue:
+          type: number
+        monthlyRevenue:
+          type: array
+          items:
+            type: object
+            properties:
+              m:
+                type: string
+              v:
+                type: number
+        revenueToDate:
+          type: number
+        cocoFee:
+          type: number
+        pendingPayout:
+          type: number
+        cocoFeeRate:
+          type: number
+          example: 0.20
+        totalInvested:
+          type: number
+        orders:
+          type: object
+          properties:
+            total:
+              type: integer
+            paid:
+              type: integer
+            awaiting:
+              type: integer
+
+    StoreProduct:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        vendor:
+          type: string
+        category:
+          type: string
+        priceUsd:
+          type: number
+        description:
+          type: string
+        specs:
+          type: object
+
+    Project:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        region:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    Service:
+      type: object
+      properties:
+        id:
+          type: string
+        projectId:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+          enum: [web, worker, db, cron]
+        status:
+          type: string
+          enum: [active, deploying, stopped]
+        source:
+          type: string
+        vcpu:
+          type: number
+        memoryGb:
+          type: number
+        replicas:
+          type: integer
+
+    Deployment:
+      type: object
+      properties:
+        id:
+          type: string
+        serviceId:
+          type: string
+        status:
+          type: string
+          enum: [pending, active, removed, failed]
+        commit:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    DeploymentWithLogs:
+      allOf:
+        - $ref: '#/components/schemas/Deployment'
+        - type: object
+          properties:
+            logs:
+              type: array
+              items:
+                type: string
+
+    BillingSummary:
+      type: object
+      properties:
+        plan:
+          type: object
+        balanceCents:
+          type: integer
+        fundedCents:
+          type: integer
+        currentUsageCents:
+          type: integer
+
+    CreditUserView:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+        billing:
+          type: string
+        balanceCents:
+          type: integer
+        fundedCents:
+          type: integer
+        suspendedAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    CreditLedgerEntry:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum: [topup, usage, adjustment, refund]
+        amountCents:
+          type: integer
+        balanceAfterCents:
+          type: integer
+        note:
+          type: string
+        by:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    PayoutView:
+      type: object
+      properties:
+        id:
+          type: string
+        owner:
+          type: object
+          properties:
+            id:
+              type: string
+            name:
+              type: string
+            email:
+              type: string
+        weekStart:
+          type: string
+          format: date-time
+        weekEnd:
+          type: string
+          format: date-time
+        grossCents:
+          type: integer
+        feeCents:
+          type: integer
+        netCents:
+          type: integer
+        feeRate:
+          type: number
+          example: 0.20
+        simulated:
+          type: boolean
+        status:
+          type: string
+          enum: [pending, held, paid]
+        paidAt:
+          type: string
+          format: date-time
+          nullable: true
+        paidReference:
+          type: string
+          nullable: true
+        note:
+          type: string
+
+    AdminUserView:
+      allOf:
+        - $ref: '#/components/schemas/PublicUser'
+
+    SendEmailRequest:
+      type: object
+      required:
+        - email
+        - template
+      properties:
+        email:
+          type: string
+          format: email
+          example: investor@example.com
+        name:
+          type: string
+          example: Sarah Connor
+        template:
+          type: string
+          enum: [broadcast-registration, whitepaper]
+          example: broadcast-registration
+        start:
+          type: string
+          format: date-time
+          description: Session start time (required when template=broadcast-registration)
+          example: '2026-10-16T18:00:00Z'
+        timeZone:
+          type: string
+          example: America/New_York

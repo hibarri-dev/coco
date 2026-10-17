@@ -29,6 +29,8 @@
     "mongoose": "^9.11.2",
     "morgan": "^1.12.1",
     "nodemailer": "^10.1.0",
-    "stripe": "^23.0.0"
+    "stripe": "^23.0.0",
+    "swagger-ui-express": "^5.0.1",
+    "yamljs": "^0.3.0"
   }
 }
