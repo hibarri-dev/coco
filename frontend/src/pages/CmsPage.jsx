@@ -5,6 +5,7 @@ import Navbar from '../components/site/Navbar';
 import Footer from '../components/site/Footer';
 import { API_URL } from '../config/funnel';
 import { cleanHtml } from '../lib/cleanHtml';
+import { applyCmsPageMeta, setRobots } from '../lib/page-meta';
 
 // Tailwind preflight strips heading/list/link styles; restore them for Quill output.
 const RICH_TEXT_CLASS =
@@ -36,13 +37,13 @@ export default function CmsPage() {
         if (cancelled) return;
         setPage(data);
         setState('ready');
-        document.title = `${data.title} | CoCo by Hibarri`;
-        if (data.metaDescription) {
-          document.querySelector('meta[name="description"]')?.setAttribute('content', data.metaDescription);
-        }
+        applyCmsPageMeta({ slug: data.slug || slug, title: data.title, metaDescription: data.metaDescription });
       })
       .catch(() => {
-        if (!cancelled) setState('missing');
+        if (!cancelled) {
+          setState('missing');
+          setRobots(false);
+        }
       });
     return () => {
       cancelled = true;

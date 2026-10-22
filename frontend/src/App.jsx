@@ -1,6 +1,7 @@
 import { Component, Suspense, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import AnalyticsTracker from './components/AnalyticsTracker';
+import DocumentMeta from './components/DocumentMeta';
 import { AuthProvider } from './context/AuthContext';
 import RequireAuth from './components/auth/RequireAuth';
 import { lazyWithRetry as lazy } from './lib/chunkReload';
@@ -80,6 +81,7 @@ export default function App() {
     <BrowserRouter>
       <AuthProvider>
         <ScrollManager />
+        <DocumentMeta />
         <AnalyticsTracker />
         <RoutedBoundary>
         <Suspense fallback={<div className="min-h-screen bg-black" />}>
