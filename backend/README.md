@@ -12,6 +12,24 @@ npm install
 npm run dev            # http://localhost:5001, frontend dev server proxies /api here
 ```
 
+## Swagger & API Documentation
+
+Interactive Swagger UI and machine-readable OpenAPI 3.0 specifications are served directly by the backend:
+
+- **Interactive Swagger UI:** `http://localhost:5001/api-docs` (or `/docs`, `/swagger`)
+- **OpenAPI 3.0 Spec (JSON):** `http://localhost:5001/api-docs/openapi.json`
+- **OpenAPI 3.0 Spec (YAML):** `http://localhost:5001/api-docs/openapi.yaml`
+- **Architectural Markdown Guides:**
+  - Full API Reference: [`docs/SWAGGER_AND_API_REFERENCE.md`](../docs/SWAGGER_AND_API_REFERENCE.md)
+  - Environment & Hibarri Integration Guide: [`docs/ENV_AND_HIBARRI_INTEGRATION.md`](../docs/ENV_AND_HIBARRI_INTEGRATION.md)
+
+## Hibarri Central Dashboard Integration
+
+CoCo connects to the Hibarri Central Superadmin via two key touchpoints:
+1. **Inbound Admin Proxy:** Hibarri Central calls `/api/admin/*` server-to-server passing `X-Internal-Key: <COCO_INTERNAL_KEY>` and optional `X-Admin-Email: <email>`. No browser JWT session is required.
+2. **Outbound Lead Relay:** Marketing funnel submissions (`POST /api/coco/leads`) and paid server orders (`checkout.session.completed` in Stripe webhook) forward lead data to `process.env.LEADS_ENDPOINT` (`https://api.hibarri.com/api/coco/leads`).
+
+
 ## Deploy
 
 1. Host this folder on any Node 20+ host (Render, Railway, Fly, a VM). Start command: `npm start`.

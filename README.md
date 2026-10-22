@@ -4,6 +4,15 @@ Coco is a high-performance bare-metal and virtualization compute marketplace, st
 
 ---
 
+## Swagger API Documentation & Integration Guides
+
+- **Interactive Swagger UI:** [http://localhost:5001/api-docs](http://localhost:5001/api-docs) (aliases: `/docs`, `/swagger`)
+- **OpenAPI 3.0 Specification:** [JSON](file:///d:/Hibarri/coco/backend/src/docs/openapi.json) | [YAML](file:///d:/Hibarri/coco/backend/src/docs/openapi.yaml)
+- **Comprehensive API Reference:** [`docs/SWAGGER_AND_API_REFERENCE.md`](file:///d:/Hibarri/coco/docs/SWAGGER_AND_API_REFERENCE.md)
+- **Environment & Hibarri Dashboard Integration:** [`docs/ENV_AND_HIBARRI_INTEGRATION.md`](file:///d:/Hibarri/coco/docs/ENV_AND_HIBARRI_INTEGRATION.md)
+
+---
+
 ## 1. Cloud Compute & Billing Lifecycle
 
 ### The $20 Credit & Weekly Metering Rule
