@@ -21,8 +21,14 @@ export const escapeHtml = (value) =>
   String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
 // Table layout and inline styles only: most email clients ignore <style> blocks and flexbox.
-export function layout({ preheader, heading, paragraphs, button, footnote }) {
-  const body = paragraphs.map((p) => `<p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#3b3946">${p}</p>`).join('');
+// A paragraph is an HTML string wrapped in <p>, or { html } inserted as-is (tables and other blocks).
+export function layout({ preheader, heading, paragraphs, button, footnote, bannerUrl }) {
+  const body = paragraphs
+    .map((p) => (typeof p === 'object' ? p.html : `<p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#3b3946">${p}</p>`))
+    .join('');
+  const banner = bannerUrl
+    ? `<tr><td style="padding:0 32px 24px"><img src="${escapeHtml(bannerUrl)}" alt="" width="496" style="display:block;width:100%;max-width:496px;height:auto;border:0;border-radius:12px"></td></tr>`
+    : '';
   const cta = button
     ? `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:8px 0 24px"><tr><td style="border-radius:12px;background:#9e00ff">
         <a href="${escapeHtml(button.href)}" style="display:inline-block;padding:14px 26px;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none">${escapeHtml(button.label)}</a>
@@ -39,6 +45,7 @@ export function layout({ preheader, heading, paragraphs, button, footnote }) {
           <div style="margin-top:10px;font-size:26px;font-weight:700;line-height:1.2">${escapeHtml(heading)}</div>
         </td></tr>
         <tr><td style="padding:28px 32px 8px">${body}${cta}</td></tr>
+        ${banner}
         <tr><td style="padding:0 32px 28px;font-size:12px;line-height:1.6;color:#8a8794">${footnote ?? ''}</td></tr>
       </table>
       <div style="margin-top:16px;font-size:11px;color:#a29fae">You received this because you signed up at coco.hibarri.com.</div>

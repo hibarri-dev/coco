@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import { Server } from '../models/Server.js';
 import { Service } from '../models/Service.js';
+import { notifyFirstUse } from './notificationService.js';
 
 const RUNNING = ['active', 'deploying'];
 
@@ -43,6 +44,10 @@ export async function syncAllocation(serverIds) {
     },
   ]);
   const byServer = new Map(rows.map((r) => [String(r._id), r]));
+  const before = await Server.find({ _id: { $in: ids } }, { customers: 1 }).lean();
+  const gainedFirstCustomer = before
+    .filter((s) => !s.customers && byServer.get(String(s._id))?.owners.length)
+    .map((s) => s._id);
   await Server.bulkWrite(
     ids.map((id) => {
       const r = byServer.get(String(id));
@@ -54,4 +59,5 @@ export async function syncAllocation(serverIds) {
       };
     })
   );
+  if (gainedFirstCustomer.length) void notifyFirstUse(gainedFirstCustomer);
 }

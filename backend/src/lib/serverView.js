@@ -35,6 +35,8 @@ export function serverView(s) {
     storage: s.storage,
     network: s.network,
     status: s.status,
+    rackNumber: s.rackNumber || '',
+    firstUseAt: s.firstUseAt || null,
     disconnectRequested: Boolean(s.disconnectRequestedAt),
     // Share of vCPU sold, the same measure as the portfolio's utilization.
     utilization: totalVcpu ? Math.round((Math.min(s.allocatedVcpu || 0, totalVcpu) / totalVcpu) * 1000) / 10 : 0,

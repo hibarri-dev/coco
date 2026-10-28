@@ -4,8 +4,13 @@ import { User, ROLES } from '../models/User.js';
 import { fulfillOrder } from '../services/provisionService.js';
 import { serverView } from '../lib/serverView.js';
 import { str, EMAIL, REFERENCE } from '../lib/http.js';
+import { sendLifecycleEmail, notifyFirstUse } from '../services/notificationService.js';
+import { sendInvoicePdf } from './orderController.js';
 
 const LIMIT = 200;
+// The "Configuration" and "Live" stages admins pick in Hibarri, and the email each one sends.
+const CONFIGURATION_STATUS = 'Provisioning';
+const STAGE_EMAILS = { [CONFIGURATION_STATUS]: 'server_configuration', Online: 'server_live' };
 const PERCENT_FIELDS = ['cpuUtil', 'ramUtil', 'storageUtil', 'networkUtil', 'gpuUtil', 'uptime'];
 const COUNT_FIELDS = ['customers', 'allocatedVcpu', 'allocatedRamGb'];
 const MONEY_FIELDS = ['revenue', 'revenueToDate'];
@@ -65,6 +70,12 @@ export async function markOrderPaid(req, res) {
   return res.json({ success: true, order: adminOrderView(result.order), servers: result.servers.map(serverView) });
 }
 
+export async function getOrderInvoiceAdmin(req, res) {
+  const order = await findOrder(req.params.reference);
+  if (!order) return res.status(404).json({ error: 'not_found', message: 'Order not found' });
+  return sendInvoicePdf(res, order);
+}
+
 export async function cancelOrder(req, res) {
   const order = await findOrder(req.params.reference);
   if (!order) return res.status(404).json({ error: 'not_found', message: 'Order not found' });
@@ -109,6 +120,7 @@ export async function listServers(req, res) {
     count: servers.length,
     servers: servers.map((s) => ({
       ...serverView(s),
+      stageHistory: s.stageHistory || [],
       owner: s.userId?.email ? { id: s.userId._id, name: s.userId.name, email: s.userId.email } : null,
     })),
   });
@@ -120,14 +132,29 @@ export async function updateServer(req, res) {
 
   const body = req.body ?? {};
   const errors = [];
+  let enteredStage = null;
+  const hadCustomers = server.customers > 0;
+
+  if (body.rackNumber !== undefined) {
+    const rack = str(body.rackNumber, 40);
+    if (typeof body.rackNumber !== 'string') errors.push('rackNumber must be a string');
+    else server.rackNumber = rack;
+  }
 
   if (body.status !== undefined) {
     if (!SERVER_STATUSES.includes(body.status)) {
       errors.push(`status must be one of ${SERVER_STATUSES.join(', ')}`);
+    } else if (body.status === CONFIGURATION_STATUS && !server.rackNumber) {
+      errors.push('rackNumber is required to move a server to the Configuration stage');
     } else if (body.status !== server.status) {
       server.status = body.status;
+      enteredStage = body.status;
       if (body.status === 'Online' && !server.onlineSince) server.onlineSince = new Date();
-      server.alerts.push({ level: 'info', title: `Status: ${body.status}`, detail: str(body.statusNote, 500) || `Your server is now ${body.status.toLowerCase()}.`, time: new Date() });
+      server.stageHistory.push({ status: body.status, at: new Date(), by: req.user.email || '' });
+      const detail = body.status === CONFIGURATION_STATUS
+        ? `Your server has arrived and is being configured in rack ${server.rackNumber}.`
+        : `Your server is now ${body.status.toLowerCase()}.`;
+      server.alerts.push({ level: 'info', title: `Status: ${body.status}`, detail: str(body.statusNote, 500) || detail, time: new Date() });
     }
   }
 
@@ -174,7 +201,15 @@ export async function updateServer(req, res) {
   }
 
   await server.save();
-  return res.json({ success: true, server: serverView(server) });
+
+  let email = null;
+  const emailKey = STAGE_EMAILS[enteredStage];
+  if (emailKey && body.notify !== false) {
+    email = { key: emailKey, status: await sendLifecycleEmail(emailKey, { server: server.toObject(), trigger: `admin:${req.user.email}` }) };
+  }
+  if (!hadCustomers && server.customers > 0 && server.status === 'Online') await notifyFirstUse([server._id]);
+
+  return res.json({ success: true, server: serverView(server), email });
 }
 
 export async function listUsers(req, res) {

@@ -70,6 +70,18 @@ const serverSchema = new mongoose.Schema(
     },
     onlineSince: { type: Date, default: null },
     disconnectRequestedAt: { type: Date, default: null },
+    // Physical location in the data center, assigned when the server enters configuration.
+    rackNumber: { type: String, default: '', trim: true },
+    // When the first customer workload was placed here; drives the one-time "first user" email.
+    firstUseAt: { type: Date, default: null },
+    stageHistory: [
+      {
+        status: { type: String, enum: SERVER_STATUSES },
+        at: { type: Date, default: Date.now },
+        by: { type: String, default: '' },
+        _id: false,
+      },
+    ],
 
     // Telemetry: zero until the server is online and reporting.
     utilization: percent,

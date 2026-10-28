@@ -97,7 +97,7 @@ function Confirmation({ order, q }) {
         <CircleCheck size={44} className="mx-auto text-emerald-500" />
         <h1 className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">Order {order.reference} received</h1>
         <p className="mt-2 text-[15px] text-[var(--muted)]">
-          We'll email your invoice to {order.customer.email}. Your order is saved in your dashboard, and your {order.quote.qty === 1 ? 'server appears' : 'servers appear'} there under {order.dataCenter.provider}, {order.dataCenter.city} as soon as your transfer arrives.
+          Your invoice is ready to download below, and we'll email a paid copy to {order.customer.email} once your transfer clears. Your order is saved in your dashboard, and your {order.quote.qty === 1 ? 'server appears' : 'servers appear'} there under {order.dataCenter.provider}, {order.dataCenter.city} as soon as your transfer arrives.
         </p>
       </div>
 
@@ -110,7 +110,13 @@ function Confirmation({ order, q }) {
             <div key={k} className="flex items-center justify-between gap-4 py-3"><dt className="text-[var(--muted)]">{k}</dt><dd className="text-right font-medium">{v}<CopyValue value={v} /></dd></div>
           ))}
         </dl>
-        {bankRows.length < 2 && <p className="mt-3 text-[12.5px] text-[var(--faint)]">Full bank details are on the invoice we email you.</p>}
+        {bankRows.length < 2 && <p className="mt-3 text-[12.5px] text-[var(--faint)]">Full bank details are on your invoice.</p>}
+        <a
+          href={`/api/orders/${encodeURIComponent(order.reference)}/invoice.pdf`}
+          className="mt-4 inline-flex items-center gap-2 rounded-xl border border-[var(--line)] px-4 py-2 text-[13.5px] font-semibold hover:bg-[var(--surface-2)]"
+        >
+          <Banknote size={15} /> Download invoice (PDF)
+        </a>
         <p className="mt-3 text-[12.5px] text-[var(--faint)]">Always include the reference so we can match your payment. We order your servers as soon as funds arrive.</p>
       </div>
 

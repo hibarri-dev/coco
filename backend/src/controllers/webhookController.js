@@ -3,6 +3,7 @@ import { fulfillOrder } from '../services/provisionService.js';
 import { Order } from '../models/Order.js';
 import { DEV_BILLING_EVENTS, handleDevBillingEvent } from '../services/devBillingService.js';
 import { CREDIT_EVENTS, handleCreditEvent } from '../services/creditService.js';
+import { forwardLead } from '../lib/leads.js';
 
 const HANDLED = new Set([
   'checkout.session.completed',
@@ -12,19 +13,7 @@ const HANDLED = new Set([
 ]);
 
 // Paid orders are also forwarded to Hibarri Superadmin > Coco > Forms, as the old Vercel function did.
-async function forwardToLeads(data, form) {
-  const endpoint = process.env.LEADS_ENDPOINT;
-  if (!endpoint || !/^https?:\/\//.test(endpoint)) return;
-  try {
-    await fetch(endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ form, data, submittedAt: new Date().toISOString() }),
-    });
-  } catch (err) {
-    console.error('[StripeWebhook] Could not forward to leads:', err?.message);
-  }
-}
+const forwardToLeads = (data, form) => forwardLead(form, data);
 
 export async function handleStripeWebhook(req, res) {
   const stripe = getStripe();

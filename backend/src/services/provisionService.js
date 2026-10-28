@@ -1,6 +1,7 @@
 import { User } from '../models/User.js';
 import { Order } from '../models/Order.js';
 import { Server } from '../models/Server.js';
+import { notifyPurchase } from './notificationService.js';
 
 export function parseRamGb(ram = '') {
   const match = String(ram).match(/([\d.]+)\s*(TB|GB)/i);
@@ -122,5 +123,6 @@ export async function fulfillOrder(reference, payment = {}) {
   const fresh = await Order.findById(order._id);
   const servers = await Server.find({ orderId: order._id });
   console.info(`[Provision] ${reference}: ${servers.length} server(s) ready in ${order.dataCenter?.city} (${order.dataCenter?.facility})`);
+  void notifyPurchase(order._id);
   return { order: fresh, servers };
 }
