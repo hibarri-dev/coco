@@ -9,6 +9,7 @@ import { EASE } from '../ui/motion';
 import ThemeToggle from '../ui/ThemeToggle';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth, dashboardPathFor } from '../../context/AuthContext';
+import { SHOW_INVESTORS } from '../../config/funnel';
 
 const MENUS = [
   {
@@ -51,15 +52,22 @@ const MENUS = [
       jobs: ['Senior Platform Engineer, Scheduling', 'Data Center Operations Lead', 'Partner Success Manager'],
     },
     items: [
-      { title: 'Cloud Partners', desc: 'Own servers and earn from every vCPU sold', href: '/investors' },
-      { title: 'Server packages', desc: 'Pick a data center and price your servers', href: '/packages' },
-      { title: 'Store', desc: 'Browse live server stock and prices', href: '/store' },
-      { title: 'Affiliate program', desc: 'Get paid for each developer you refer', href: '/#partners' },
+      { title: 'Cloud Partners', desc: 'Own servers and earn from every vCPU sold', href: '/investors', investor: true },
+      { title: 'Server packages', desc: 'Pick a data center and price your servers', href: '/packages', investor: true },
+      { title: 'Store', desc: 'Browse live server stock and prices', href: '/store', investor: true },
+      { title: 'Affiliate program', desc: 'Get paid for each developer you refer', href: '/#partners', investor: true },
       { title: 'Blog', desc: 'Comparisons, pricing, and hosting guides', href: '/blog' },
       { title: 'About', desc: 'The team and mission behind CoCo', href: '/#cta' },
     ],
   },
 ];
+
+const DEV_MENUS = MENUS.map((m) => ({ ...m, items: m.items.filter((item) => !item.investor) }));
+
+function useMenus() {
+  const partnerSite = useLocation().pathname.startsWith('/investors');
+  return { partnerSite, menus: SHOW_INVESTORS || partnerSite ? MENUS : DEV_MENUS };
+}
 
 function MenuPanel({ menu }) {
   const { feature, items } = menu;
@@ -134,7 +142,7 @@ function NavLink({ href, className, style, children, onClick }) {
 export default function Navbar({ themeToggle = true }) {
   const { theme } = useTheme();
   const { user, isAuthenticated } = useAuth();
-  const partnerSite = useLocation().pathname.startsWith('/investors');
+  const { partnerSite, menus } = useMenus();
   const [open, setOpen] = useState(null);
   const [prevIndex, setPrevIndex] = useState(0);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -144,16 +152,16 @@ export default function Navbar({ themeToggle = true }) {
   const listRef = useRef(null);
   const closeTimer = useRef(null);
 
-  const activeIndex = MENUS.findIndex((m) => m.key === open);
+  const activeIndex = menus.findIndex((m) => m.key === open);
   const direction = activeIndex > prevIndex ? 1 : -1;
 
   const show = useCallback(
     (key) => {
       clearTimeout(closeTimer.current);
-      setPrevIndex(activeIndex === -1 ? MENUS.findIndex((m) => m.key === key) : activeIndex);
+      setPrevIndex(activeIndex === -1 ? menus.findIndex((m) => m.key === key) : activeIndex);
       setOpen(key);
     },
-    [activeIndex],
+    [activeIndex, menus],
   );
 
   const scheduleClose = () => {
@@ -202,7 +210,7 @@ export default function Navbar({ themeToggle = true }) {
     };
   }, [mobileOpen]);
 
-  const activeMenu = MENUS[activeIndex];
+  const activeMenu = menus[activeIndex];
 
   return (
     <header
@@ -217,7 +225,7 @@ export default function Navbar({ themeToggle = true }) {
 
         <nav aria-label="Main" className="hidden lg:block relative" onMouseLeave={scheduleClose}>
           <ul ref={listRef} className="flex items-center gap-1">
-            {MENUS.map((menu) => (
+            {menus.map((menu) => (
               <li key={menu.key}>
                 <button
                   ref={(el) => (triggerRefs.current[menu.key] = el)}
@@ -326,7 +334,7 @@ function MobileMenu({ onClose, themeToggle }) {
   const [expanded, setExpanded] = useState(null);
   const { theme } = useTheme();
   const { user, isAuthenticated } = useAuth();
-  const partnerSite = useLocation().pathname.startsWith('/investors');
+  const { partnerSite, menus } = useMenus();
   return (
     <motion.div
       data-theme={theme}
@@ -351,18 +359,20 @@ function MobileMenu({ onClose, themeToggle }) {
         </div>
       </div>
       <div className="flex-1 overflow-y-auto overscroll-contain px-5 py-3">
-        <Link
-          to="/investors"
-          onClick={onClose}
-          className="mb-2 flex items-center justify-between rounded-2xl border border-coco-purple/30 bg-coco-purple/10 px-4 py-3.5"
-        >
-          <span>
-            <span className="block text-[15px] font-semibold">Cloud Partners</span>
-            <span className="block text-[13px] text-white/55">Own servers and earn from every vCPU sold</span>
-          </span>
-          <ArrowRight size={18} className="text-coco-lilac" />
-        </Link>
-        {MENUS.map((menu, i) => (
+        {(SHOW_INVESTORS || partnerSite) && (
+          <Link
+            to="/investors"
+            onClick={onClose}
+            className="mb-2 flex items-center justify-between rounded-2xl border border-coco-purple/30 bg-coco-purple/10 px-4 py-3.5"
+          >
+            <span>
+              <span className="block text-[15px] font-semibold">Cloud Partners</span>
+              <span className="block text-[13px] text-white/55">Own servers and earn from every vCPU sold</span>
+            </span>
+            <ArrowRight size={18} className="text-coco-lilac" />
+          </Link>
+        )}
+        {menus.map((menu, i) => (
           <motion.div
             key={menu.key}
             initial={{ opacity: 0, y: 8 }}

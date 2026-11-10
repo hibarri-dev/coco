@@ -10,6 +10,7 @@ import Features from '../components/landing/Features';
 import { Brands, Testimonials, Stats, Pricing, PartnerBand, FinalCta, Featured } from '../components/landing/Sections';
 import { EASE, Reveal } from '../components/ui/motion';
 import { useTheme } from '../hooks/useTheme';
+import { SHOW_INVESTORS } from '../config/funnel';
 
 const fadeUp = (delay) => ({
   initial: { opacity: 0, y: 18 },
@@ -57,12 +58,21 @@ function Hero() {
               Deploy
               <ArrowRight size={16} className="transition-transform group-hover:translate-x-0.5" />
             </a>
-            <Link
-              to="/investors"
-              className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-black/50 px-6 py-3.5 text-[15px] font-semibold text-white backdrop-blur hover:bg-black/70 hover:border-white/20 transition"
-            >
-              Cloud Partners
-            </Link>
+            {SHOW_INVESTORS ? (
+              <Link
+                to="/investors"
+                className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-black/50 px-6 py-3.5 text-[15px] font-semibold text-white backdrop-blur hover:bg-black/70 hover:border-white/20 transition"
+              >
+                Cloud Partners
+              </Link>
+            ) : (
+              <a
+                href="#pricing"
+                className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-black/50 px-6 py-3.5 text-[15px] font-semibold text-white backdrop-blur hover:bg-black/70 hover:border-white/20 transition"
+              >
+                See pricing
+              </a>
+            )}
           </motion.div>
 
           <motion.div
@@ -129,7 +139,7 @@ export default function LandingPage() {
         <Testimonials />
         <Stats />
         <Pricing />
-        <PartnerBand />
+        {SHOW_INVESTORS && <PartnerBand />}
         <Featured />
         <FinalCta />
       </main>

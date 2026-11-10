@@ -19,6 +19,9 @@ export const BROADCAST = {
 
 export const OFFER_WINDOW_HOURS = 24;
 
+// Investor/partner promos on the developer site (home, navbar, footer). The /investors pages stay live either way.
+export const SHOW_INVESTORS = false;
+
 export const ENDPOINTS = {
   leads: env.VITE_LEADS_ENDPOINT || (API_URL ? `${API_URL}/coco/leads` : ''),
   catalog: env.VITE_CATALOG_ENDPOINT || '',

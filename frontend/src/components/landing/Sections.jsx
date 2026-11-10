@@ -5,6 +5,7 @@ import { ArrowRight, ArrowUpRight, Check, Cpu, Microchip, Server, HardDrive, Quo
 import { Reveal, LiveCounter, Counter } from '../ui/motion';
 import { PartnerLogo } from '../investors/Partners';
 import { PARTNERS } from '../../data/partners';
+import { SHOW_INVESTORS } from '../../config/funnel';
 import { PLANS as DEV_PLANS, RATES as DEV_RATES, HOURS_PER_MONTH } from '../../data/devPlans';
 
 const QUOTES = [
@@ -323,12 +324,12 @@ export function FinalCta() {
 export function Featured() {
   const items = [
     { tag: 'Launch', title: 'CoCo GPU Cloud is generally available', body: 'L40S, A100 and H100 nodes on demand, billed per second across three regions.', href: '#features' },
-    { tag: 'Partners', title: 'Introducing the Cloud Partner Program', body: 'Own the servers behind the cloud and earn from every vCPU developers rent.', href: '/investors', internal: true },
-  ];
+    { tag: 'Partners', title: 'Introducing the Cloud Partner Program', body: 'Own the servers behind the cloud and earn from every vCPU developers rent.', href: '/investors', internal: true, investor: true },
+  ].filter((it) => SHOW_INVESTORS || !it.investor);
   return (
     <section id="featured" className="mx-auto max-w-[1240px] px-5 lg:px-8 pb-24">
       <div className="text-[13px] font-semibold uppercase tracking-[0.2em] text-white/40 mb-5">Featured</div>
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className={`grid gap-4 ${items.length > 1 ? 'md:grid-cols-2' : ''}`}>
         {items.map((it) => {
           const Comp = it.internal ? Link : 'a';
           const props = it.internal ? { to: it.href } : { href: it.href };

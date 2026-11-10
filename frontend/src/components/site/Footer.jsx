@@ -1,13 +1,14 @@
 import { Link } from 'react-router-dom';
 import { Logo } from '../Logo';
+import { SHOW_INVESTORS } from '../../config/funnel';
 
 const COLUMNS = [
   { title: 'Product', links: [['Features', '/#features'], ['GPU Cloud', '/#features'], ['Pricing', '/#pricing'], ['Templates', '/#features'], ['Changelog', '/#featured']] },
   { title: 'Developers', links: [['Demo dashboard', '/dev-demo'], ['Documentation', '/#features'], ['API reference', '/#features'], ['CLI', '/#features'], ['Status', '/#stats'], ['Community', '/#testimonials']] },
-  { title: 'Partners', links: [['Cloud Partners', '/investors'], ['Partner demo dashboard', '/demo'], ['Partner dashboard', '/dashboard'], ['Server packages', '/packages'], ['Free broadcast', '/live'], ['Affiliate program', '/#partners']] },
+  { title: 'Partners', investor: true, links: [['Cloud Partners', '/investors'], ['Partner demo dashboard', '/demo'], ['Partner dashboard', '/dashboard'], ['Server packages', '/packages'], ['Free broadcast', '/live'], ['Affiliate program', '/#partners']] },
   { title: 'Company', links: [['About', '/#cta'], ['Careers', '/#cta'], ['Blog', '/blog'], ['Contact', 'mailto:hello@hibarri.com']] },
   { title: 'Legal', links: [['Privacy policy', '#'], ['Terms of service', '#'], ['DPA', '#'], ['Acceptable use', '#'], ['SLA', '#']] },
-];
+].filter((col) => SHOW_INVESTORS || !col.investor);
 
 function FooterLink({ href, children }) {
   const cls = 'text-[14px] text-white/50 hover:text-white transition-colors';
@@ -33,7 +34,7 @@ export default function Footer() {
               <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]" /> All systems operational
             </a>
           </div>
-          <div className="grid grid-cols-2 gap-8 sm:grid-cols-3 md:grid-cols-5">
+          <div className={`grid grid-cols-2 gap-8 sm:grid-cols-3 ${COLUMNS.length > 4 ? 'md:grid-cols-5' : 'md:grid-cols-4'}`}>
             {COLUMNS.map((col) => (
               <div key={col.title}>
                 <div className="text-[13px] font-semibold text-white">{col.title}</div>
