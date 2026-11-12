@@ -67,7 +67,8 @@ test('links come only from the template, never from customer values', () => {
 test('non-http link targets and banner URLs are dropped', () => {
   const { html } = renderTemplate({ subject: 's', bodyText: '[x](javascript:alert(1))', bannerUrl: 'javascript:alert(1)' }, {});
   assert.doesNotMatch(html, /href="javascript/);
-  assert.doesNotMatch(html, /<img/);
+  assert.doesNotMatch(html, /<img src="javascript/);
+  assert.equal(html.match(/<img /g).length, 1); // only the header logo
   const withBanner = renderTemplate({ subject: 's', bodyText: 'b', bannerUrl: 'https://cdn.example/banner.png' }, {});
   assert.match(withBanner.html, /<img src="https:\/\/cdn\.example\/banner\.png"/);
 });
