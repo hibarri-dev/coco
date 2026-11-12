@@ -15,7 +15,7 @@ export function getMailer() {
   return transport;
 }
 
-export const FROM = () => process.env.EMAIL_FROM || 'CoCo by Hibarri <coco@hibarri.com>';
+export const FROM = () => process.env.EMAIL_FROM || 'CoCo by Hibarri <coco@coco.hibarri.com>';
 
 export const escapeHtml = (value) =>
   String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);

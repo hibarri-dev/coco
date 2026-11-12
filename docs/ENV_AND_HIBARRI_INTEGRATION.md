@@ -149,9 +149,9 @@ CoCo connects to enterprise hardware distributors to populate the hardware store
 | :--- | :--- | :--- | :--- | :--- |
 | `SMTP_HOST` | String | `smtp.example.com` | For emails | SMTP mail server hostname. |
 | `SMTP_PORT` | Number | `465` (SSL) or `587` (TLS) | For emails | SMTP connection port. |
-| `SMTP_USER` | String | `coco@hibarri.com` | For emails | Mail server account username. |
+| `SMTP_USER` | String | `coco@coco.hibarri.com` | For emails | Mail server account username. |
 | `SMTP_PASS` | String | `********` | For emails | Mail server password / app-password. |
-| `EMAIL_FROM` | String | `"CoCo by Hibarri <coco@hibarri.com>"` | No | Display name and sender address. |
+| `EMAIL_FROM` | String | `"CoCo by Hibarri <coco@coco.hibarri.com>"` | No | Display name and sender address. |
 | `EMAIL_REPLY_TO` | String | `support@hibarri.com` | No | Reply-to destination for customer queries. |
 | `BROADCAST_TITLE` | String | `Real Estate vs Digital Estate` | No | Topic title included in confirmation emails and ICS calendar files. |
 | `BROADCAST_DURATION_MIN`| Number | `75` | No | Broadcast runtime in minutes for calendar invites. |

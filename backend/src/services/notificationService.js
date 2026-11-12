@@ -23,7 +23,7 @@ function serverVars(server) {
 export function buildVars({ user, order, server }) {
   return {
     Name: displayName(order?.customer?.name || user?.name),
-    DashboardUrl: `${primaryClientUrl()}/dashboard`,
+    DashboardUrl: `${primaryClientUrl()}${user?.role === 'user' ? '/dev' : '/dashboard'}`,
     ...(server ? serverVars(server) : {}),
     ...(order ? { DataCenter: dataCenterLabel(order.dataCenter), OrderReference: order.reference } : {}),
   };
@@ -53,7 +53,7 @@ const finish = (key, refId, $set) => EmailLog.updateOne({ key, refId }, { $set }
  * break checkout, fulfilment or an admin action. Returns the resulting log status.
  */
 export async function sendLifecycleEmail(key, { user, order, server, trigger = '' } = {}) {
-  const refId = String(server?.serial || order?.reference || '');
+  const refId = String(server?.serial || order?.reference || user?._id || '');
   try {
     if (!refId) return 'skipped';
     const owner = user ?? (await User.findById(server?.userId || order?.userId).lean());
@@ -90,6 +90,8 @@ export async function sendLifecycleEmail(key, { user, order, server, trigger = '
     return 'failed';
   }
 }
+
+export const notifySignup = (user) => sendLifecycleEmail('account_welcome', { user, trigger: 'signup' });
 
 export async function notifyPurchase(orderId) {
   try {

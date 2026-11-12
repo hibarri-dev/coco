@@ -16,6 +16,8 @@ import { FAQ } from '../../data/funnel';
 import { usd } from '../../data/packages';
 import { useAuth } from '../../context/AuthContext';
 
+const MARKETING_TEXT = 'Send me news, offers and updates from CoCo by Hibarri. I can unsubscribe at any time.';
+
 const ORDER_ERRORS = {
   not_configured: 'Card payments are being connected. Choose wire transfer for now, or request a call back and we will send a secure payment link.',
   amount_too_large: 'This order is above the card payment limit. Please choose wire transfer, or request a call back.',
@@ -233,6 +235,7 @@ export default function CheckoutPage({ funnel = false }) {
   });
   const [method, setMethod] = useState(payment === 'cancelled' ? 'card' : 'wire');
   const [agree, setAgree] = useState(false);
+  const [marketing, setMarketing] = useState(false);
   const [errors, setErrors] = useState({});
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState(payment === 'cancelled' ? 'Card payment was cancelled and you have not been charged. You can try again or choose wire transfer.' : '');
@@ -287,6 +290,7 @@ export default function CheckoutPage({ funnel = false }) {
       customer: { ...customer, email: user.email },
       shipping: { cost: 0, address: { name: `${location.provider}, ${location.facility}`, ...location.address } },
       dataCenter: { id: location.id, provider: location.provider, facility: location.facility, city: location.city, region: location.region, country: location.countryName },
+      ...(marketing ? { consent: { email: true, text: MARKETING_TEXT, at: new Date().toISOString() } } : {}),
     });
 
     try {
@@ -414,6 +418,17 @@ export default function CheckoutPage({ funnel = false }) {
               I understand that earnings are estimates and not guaranteed, that server hardware depreciates, and that rack space for {RACK_MONTHS} months is paid up front.
               {errors.agree && <span className="mt-1 block text-rose-500">{errors.agree}</span>}
             </span>
+          </label>
+
+          <label className="flex cursor-pointer items-start gap-3 px-1 text-[13px]">
+            <input
+              type="checkbox"
+              data-track="Marketing consent"
+              checked={marketing}
+              onChange={(e) => setMarketing(e.target.checked)}
+              className="mt-0.5 h-4 w-4 accent-[#9e00ff]"
+            />
+            <span className="text-[var(--muted)]">{MARKETING_TEXT}</span>
           </label>
 
           {notice && <div className="rounded-2xl border border-amber-400/30 bg-amber-400/10 px-4 py-3 text-[13.5px] text-amber-600">{notice}</div>}

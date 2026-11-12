@@ -1,6 +1,6 @@
 import { ENDPOINTS } from '../config/funnel';
 
-/* Asks /api/email to send a transactional email from coco@hibarri.com.
+/* Asks /api/email to send a transactional email from coco@coco.hibarri.com.
    Never blocks the visitor's flow if the request fails. */
 export async function sendEmail(template, data) {
   try {

@@ -47,6 +47,11 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
+    // Opt-in for marketing email; forwarded with leads so MailLady only lists consenting contacts.
+    marketingConsent: {
+      type: Boolean,
+      default: false,
+    },
     status: {
       type: String,
       enum: ['active', 'suspended', 'pending'],
