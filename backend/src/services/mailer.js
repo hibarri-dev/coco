@@ -15,7 +15,10 @@ export function getMailer() {
   return transport;
 }
 
-export const FROM = () => process.env.EMAIL_FROM || 'CoCo by Hibarri <coco@hibarri.com>';
+export const FROM = () => process.env.EMAIL_FROM || 'CoCo by Hibarri <coco@coco.hibarri.com>';
+
+// PNG on purpose: Gmail and Outlook do not display SVG. Served from the frontend's public/brand folder.
+const logoUrl = () => process.env.EMAIL_LOGO_URL || 'https://coco.hibarri.com/brand/coco-logo-white-email.png';
 
 export const escapeHtml = (value) =>
   String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -41,7 +44,8 @@ export function layout({ preheader, heading, paragraphs, button, footnote, banne
     <tr><td align="center">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:20px;overflow:hidden">
         <tr><td style="background:linear-gradient(115deg,#8b4fb3,#6a2bb8 40%,#3f1a9e);background-color:#6a2bb8;padding:28px 32px;color:#ffffff">
-          <div style="font-size:13px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;opacity:0.8">CoCo by Hibarri</div>
+          <img src="${escapeHtml(logoUrl())}" alt="CoCo by Hibarri" width="120" height="46" style="display:block;width:120px;height:46px;border:0;color:#ffffff;font-size:13px;font-weight:600;letter-spacing:0.14em">
+          <div style="height:6px;line-height:6px;font-size:0">&nbsp;</div>
           <div style="margin-top:10px;font-size:26px;font-weight:700;line-height:1.2">${escapeHtml(heading)}</div>
         </td></tr>
         <tr><td style="padding:28px 32px 8px">${body}${cta}</td></tr>

@@ -8,6 +8,27 @@ import { orderLineItems, orderFacts } from '../lib/orderSummary.js';
  * are linked, and a paragraph that is exactly {OrderDetails} becomes the order table.
  */
 export const LIFECYCLE_EMAILS = {
+  account_welcome: {
+    label: 'Welcome (account created)',
+    trigger: 'system',
+    triggerDescription: 'Sent when someone creates a Coco account (Cloud Partner or developer).',
+    placeholders: ['Name', 'DashboardUrl'],
+    subject: 'Welcome to Coco by Hibarri',
+    bodyText: `Dear {Name}
+
+Welcome to Coco! Your account is ready.
+
+Everything you do with Coco lives in your dashboard, so that is the best place to start.
+
+[Go to your dashboard]({DashboardUrl})
+
+If you have any questions, just reply to this email and our team will help.
+
+Kind Regards,
+The Coco Team at Hibarri
+https://coco.hibarri.com`,
+  },
+
   purchase_completed: {
     label: 'Purchase completed',
     trigger: 'system',

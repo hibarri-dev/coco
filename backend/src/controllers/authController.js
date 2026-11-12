@@ -2,6 +2,7 @@ import { User } from '../models/User.js';
 import { setAuthCookie, clearAuthCookie } from '../lib/authCookie.js';
 import { str, EMAIL } from '../lib/http.js';
 import { forwardLead } from '../lib/leads.js';
+import { notifySignup } from '../services/notificationService.js';
 
 const MIN_PASSWORD = 8;
 const SELF_SERVICE_ROLES = ['user', 'investor'];
@@ -36,6 +37,7 @@ export async function register(req, res) {
       role,
       phone: str(body.phone, 40),
       company: str(body.company, 200),
+      marketingConsent: body.marketingConsent === true,
     });
     void forwardLead('signup', {
       name: user.name,
@@ -44,7 +46,9 @@ export async function register(req, res) {
       company: user.company,
       role: user.role,
       userId: String(user._id),
+      marketingConsent: user.marketingConsent,
     });
+    void notifySignup(user.toObject());
     return signIn(res, user, 201);
   } catch (err) {
     if (err?.code === 11000) {

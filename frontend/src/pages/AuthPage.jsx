@@ -46,6 +46,7 @@ export default function AuthPage({ defaultRole = 'investor', defaultMode = 'logi
     phone: lead?.phone ?? '',
     company: '',
     password: '',
+    marketingConsent: false,
   });
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -80,7 +81,15 @@ export default function AuthPage({ defaultRole = 'investor', defaultMode = 'logi
       const signedIn =
         mode === 'login'
           ? await login(form.email, form.password)
-          : await register({ name: form.name, email: form.email, password: form.password, phone: form.phone, company: form.company, role: developer ? 'user' : role });
+          : await register({
+              name: form.name,
+              email: form.email,
+              password: form.password,
+              phone: form.phone,
+              company: form.company,
+              role: developer ? 'user' : role,
+              marketingConsent: form.marketingConsent,
+            });
       navigate(destination(signedIn), { replace: true });
     } catch (err) {
       setError(err.message || 'Authentication failed. Please verify your details.');
@@ -195,6 +204,19 @@ export default function AuthPage({ defaultRole = 'investor', defaultMode = 'logi
             onChange={set('password')}
             placeholder={mode === 'register' ? `At least ${MIN_PASSWORD} characters` : '••••••••'}
           />
+
+          {mode === 'register' && (
+            <label className="flex cursor-pointer items-start gap-2.5 text-[12.5px] leading-snug text-white/60">
+              <input
+                type="checkbox"
+                data-track="Marketing consent"
+                checked={form.marketingConsent}
+                onChange={(e) => setForm({ ...form, marketingConsent: e.target.checked })}
+                className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-[#9e00ff]"
+              />
+              <span>Send me news, offers and updates from CoCo by Hibarri. I can unsubscribe at any time.</span>
+            </label>
+          )}
 
           <button
             type="submit"

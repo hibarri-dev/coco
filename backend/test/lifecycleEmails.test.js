@@ -9,7 +9,7 @@ import { CocoEmailTemplate } from '../src/models/CocoEmailTemplate.js';
 import { User } from '../src/models/User.js';
 import { Server } from '../src/models/Server.js';
 import { Service } from '../src/models/Service.js';
-import { sendLifecycleEmail } from '../src/services/notificationService.js';
+import { sendLifecycleEmail, notifySignup } from '../src/services/notificationService.js';
 import { syncAllocation } from '../src/services/placementService.js';
 
 const lean = (value) => ({ lean: async () => value });
@@ -67,7 +67,8 @@ test('links come only from the template, never from customer values', () => {
 test('non-http link targets and banner URLs are dropped', () => {
   const { html } = renderTemplate({ subject: 's', bodyText: '[x](javascript:alert(1))', bannerUrl: 'javascript:alert(1)' }, {});
   assert.doesNotMatch(html, /href="javascript/);
-  assert.doesNotMatch(html, /<img/);
+  assert.doesNotMatch(html, /<img src="javascript/);
+  assert.equal(html.match(/<img /g).length, 1); // only the header logo
   const withBanner = renderTemplate({ subject: 's', bodyText: 'b', bannerUrl: 'https://cdn.example/banner.png' }, {});
   assert.match(withBanner.html, /<img src="https:\/\/cdn\.example\/banner\.png"/);
 });
@@ -109,6 +110,20 @@ test('a lifecycle email is sent at most once per order/server', async () => {
 
   assert.equal(await sendLifecycleEmail('server_live', { server }), 'sent');
   assert.equal(sent.length, 2);
+});
+
+test('the welcome email is sent once per account and links to the right dashboard', async () => {
+  fakeEmailLog();
+  const developer = { _id: new mongoose.Types.ObjectId(), name: 'Dev', email: 'dev@example.com', role: 'user' };
+  const partner = { _id: new mongoose.Types.ObjectId(), name: 'Pat', email: 'pat@example.com', role: 'investor' };
+
+  assert.equal(await notifySignup(developer), 'sent');
+  assert.equal(await notifySignup(developer), 'duplicate');
+  assert.equal(await notifySignup(partner), 'sent');
+  assert.equal(sent.length, 2);
+  assert.equal(sent[0].to, 'dev@example.com');
+  assert.match(sent[0].html, /href="[^"]*\/dev"/);
+  assert.match(sent[1].html, /href="[^"]*\/dashboard"/);
 });
 
 test('the purchase email attaches the invoice PDF', async () => {
