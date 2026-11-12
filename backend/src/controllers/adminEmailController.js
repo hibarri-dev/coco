@@ -100,7 +100,11 @@ export async function sendTestEmail(req, res) {
   const attachments = template.attachesInvoice
     ? [{ filename: invoiceFilename(order), content: await buildInvoicePdf(order), contentType: 'application/pdf' }]
     : undefined;
-  await mailer.sendMail({ from: FROM(), to, subject: `[TEST] ${subject}`, html, text, attachments });
+  try {
+    await mailer.sendMail({ from: FROM(), to, subject: `[TEST] ${subject}`, html, text, attachments });
+  } catch (err) {
+    return res.status(502).json({ error: 'send_failed', message: `The mail server refused the test email: ${String(err?.response || err?.message || err).slice(0, 300)}` });
+  }
   return res.json({ success: true, to });
 }
 

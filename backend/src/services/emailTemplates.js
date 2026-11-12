@@ -33,7 +33,7 @@ https://coco.hibarri.com`,
     label: 'Purchase completed',
     trigger: 'system',
     triggerDescription: 'Sent when a server order is paid (Stripe or admin-confirmed wire).',
-    placeholders: ['Name', 'DataCenter', 'OrderReference', 'OrderDetails'],
+    placeholders: ['Name', 'DataCenter', 'OrderReference', 'OrderDetails', 'InvoiceUrl'],
     attachesInvoice: true,
     subject: 'Congratulations on your Coco server purchase',
     bodyText: `Dear {Name}
@@ -46,7 +46,7 @@ In the meantime, you can log in to your dashboard and add your banking details. 
 
 Your dashboard will not yet be configured to show server consumption until it has been set up, we will mail you once it is officially linked to the cloud.
 
-Your order details were as follows and invoice is attached:
+Your order details were as follows, and you can [download your invoice]({InvoiceUrl}) from your dashboard at any time:
 
 {OrderDetails}
 
@@ -109,6 +109,8 @@ export const LIFECYCLE_KEYS = Object.keys(LIFECYCLE_EMAILS);
 export const isLifecycleKey = (key) => Object.hasOwn(LIFECYCLE_EMAILS, key);
 
 const defaultBanner = () => process.env.EMAIL_BANNER_URL || '';
+// Off by default: the MailLady SMTP server refuses file attachments until it runs the version that accepts them.
+const attachInvoices = () => process.env.EMAIL_ATTACH_INVOICE === 'true';
 
 /** Default copy merged with any admin override stored in the database. */
 export async function resolveTemplate(key) {
@@ -120,7 +122,7 @@ export async function resolveTemplate(key) {
     trigger: def.trigger,
     triggerDescription: def.triggerDescription,
     placeholders: def.placeholders,
-    attachesInvoice: Boolean(def.attachesInvoice),
+    attachesInvoice: Boolean(def.attachesInvoice) && attachInvoices(),
     subject: override?.subject || def.subject,
     bodyText: override?.bodyText || def.bodyText,
     bannerUrl: override ? override.bannerUrl : defaultBanner(),
@@ -228,6 +230,7 @@ export function sampleVars() {
     ServerName: 'Dell PowerEdge R7625',
     Serial: 'CC-SAMPLE1234-01',
     DashboardUrl: 'https://coco.hibarri.com/dashboard',
+    InvoiceUrl: 'https://coco.hibarri.com/dashboard/billing',
   };
 }
 

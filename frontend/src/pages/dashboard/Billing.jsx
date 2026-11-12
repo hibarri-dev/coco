@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { CircleCheck, Building, CreditCard, FileText, Sparkles, CalendarClock } from 'lucide-react';
+import { CircleCheck, Building, CreditCard, FileText, Sparkles, CalendarClock, Download } from 'lucide-react';
 import { Card, CardHeader, PageHeader, Stat, Table, EmptyState, InfoTip, page } from '../../components/dashboard/ui';
 import { MobileList } from '../../components/dashboard/tables';
 import { useAccountData } from '../../context/AccountDataContext';
@@ -99,7 +99,15 @@ export default function Billing() {
                     <span className="block truncate font-medium">{orderLabel(o)}</span>
                     <span className="block text-[11.5px] text-white/40">{o.reference} · {fmtDate(o.paidAt || o.createdAt)}</span>
                   </span>
-                  <span className="shrink-0 font-semibold tabular">{usd(o.quote.total)}</span>
+                  <span className="shrink-0 text-right">
+                    <span className="block font-semibold tabular">{usd(o.quote.total)}</span>
+                    <a
+                      href={`/api/orders/${encodeURIComponent(o.reference)}/invoice.pdf`}
+                      className="inline-flex items-center gap-1 text-[11.5px] font-medium text-coco-lilac hover:underline"
+                    >
+                      <Download size={12} /> Invoice
+                    </a>
+                  </span>
                 </li>
               ))}
             </ul>

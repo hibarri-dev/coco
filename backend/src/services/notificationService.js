@@ -25,7 +25,7 @@ export function buildVars({ user, order, server }) {
     Name: displayName(order?.customer?.name || user?.name),
     DashboardUrl: `${primaryClientUrl()}${user?.role === 'user' ? '/dev' : '/dashboard'}`,
     ...(server ? serverVars(server) : {}),
-    ...(order ? { DataCenter: dataCenterLabel(order.dataCenter), OrderReference: order.reference } : {}),
+    ...(order ? { DataCenter: dataCenterLabel(order.dataCenter), OrderReference: order.reference, InvoiceUrl: `${primaryClientUrl()}/dashboard/billing` } : {}),
   };
 }
 

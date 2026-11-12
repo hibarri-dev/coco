@@ -126,12 +126,22 @@ test('the welcome email is sent once per account and links to the right dashboar
   assert.match(sent[1].html, /href="[^"]*\/dashboard"/);
 });
 
-test('the purchase email attaches the invoice PDF', async () => {
+test('the purchase email links to the invoice and attaches it only when EMAIL_ATTACH_INVOICE=true', async () => {
   fakeEmailLog();
   const order = { ...sampleOrder(), reference: 'CC-PURCH0001' };
   assert.equal(await sendLifecycleEmail('purchase_completed', { order }), 'sent');
-  assert.equal(sent[0].attachments?.[0]?.filename, 'Invoice-CC-PURCH0001.pdf');
-  assert.equal(sent[0].attachments[0].content.subarray(0, 5).toString(), '%PDF-');
+  assert.equal(sent[0].attachments, undefined);
+  assert.match(sent[0].html, /href="[^"]*\/dashboard\/billing"[^>]*>download your invoice<\/a>/);
+
+  process.env.EMAIL_ATTACH_INVOICE = 'true';
+  try {
+    const second = { ...sampleOrder(), reference: 'CC-PURCH0002' };
+    assert.equal(await sendLifecycleEmail('purchase_completed', { order: second }), 'sent');
+    assert.equal(sent[1].attachments?.[0]?.filename, 'Invoice-CC-PURCH0002.pdf');
+    assert.equal(sent[1].attachments[0].content.subarray(0, 5).toString(), '%PDF-');
+  } finally {
+    delete process.env.EMAIL_ATTACH_INVOICE;
+  }
 });
 
 test('a disabled template is skipped and logged', async () => {
